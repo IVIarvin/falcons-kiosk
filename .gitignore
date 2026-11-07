@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.data/
+.env*
+!.env.example
+*.tsbuildinfo
+test-results/
+playwright-report/
+.superpowers/
+.impeccable/questions/
+.impeccable/*-question.json
+.impeccable/review/
+.impeccable/build/
+.impeccable/mocks/decision/falcons-admin.*
+.impeccable/mocks/decision/falcons-mobile.*
+.impeccable/mocks/decision/falcons-moodboard.*
+.impeccable/mocks/decision/falcons-v2-*
