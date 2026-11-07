@@ -26,11 +26,13 @@ import {
   voidPayment,
   recordExpense,
   completeCosts,
+  voidExpense,
 } from '@/features/ledger/service';
 import { getCommunity, weekBoundsZurich } from '@/features/achievements/service';
 import { updateSettings, updateMember } from '@/features/admin/service';
 import { canonicalUrl } from '@/lib/config';
 import { searchProducts, lookupProduct } from '@/features/catalog/lookup';
+import { getPillerLibrary, savePillerQuote } from '@/features/piller/service';
 
 export type ProcurementRow = {
   id: string;
@@ -40,7 +42,14 @@ export type ProcurementRow = {
   total_cents: number;
   purchased_at: string;
 };
-export type ExpenseRow = { id: string; cents: number; reason: string; spent_at: string };
+export type ExpenseRow = {
+  id: string;
+  cents: number;
+  reason: string;
+  spent_at: string;
+  voided_at: string | null;
+  void_reason: string | null;
+};
 export async function getSnapshot(db: Database, user: Member) {
   const [settings] = await db.query<{ piller_enabled: boolean; markup_basis_points: number }>(
     'SELECT * FROM settings WHERE id=1',
@@ -63,7 +72,7 @@ export async function getSnapshot(db: Database, user: Member) {
             'SELECT p.id,p.product_id,p.quantity,p.total_cents,p.purchased_at,r.name AS product_name FROM purchases p JOIN products r ON r.id=p.product_id ORDER BY p.purchased_at DESC',
           ),
           expenses: await db.query<ExpenseRow>(
-            'SELECT id,cents,reason,spent_at FROM expenses ORDER BY spent_at DESC',
+            'SELECT id,cents,reason,spent_at,voided_at,void_reason FROM expenses ORDER BY spent_at DESC',
           ),
           unknownCosts: (
             await db.query<{
@@ -85,6 +94,7 @@ export async function getSnapshot(db: Database, user: Member) {
           },
           priceChanges: await previewAutomaticPrices(db, user),
           canonicalUrl: canonicalUrl(),
+          pillerQuotes: await getPillerLibrary(db, user),
         }
       : null;
   return {
@@ -108,6 +118,8 @@ export async function dispatch(
 ): Promise<unknown> {
   assert(user.active, 'Compte désactivé.', 'AUTH', 401);
   switch (action) {
+    case 'pillerQuote':
+      return savePillerQuote(db, user, input);
     case 'searchProducts':
       return searchProducts(db, user, input);
     case 'lookupProduct':
@@ -132,6 +144,8 @@ export async function dispatch(
       return voidPayment(db, user, input);
     case 'expense':
       return recordExpense(db, user, input);
+    case 'voidExpense':
+      return voidExpense(db, user, input);
     case 'completeCosts':
       return completeCosts(db, user, input);
     case 'profile':

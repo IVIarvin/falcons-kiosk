@@ -27,7 +27,12 @@ test('inscription autonome, achat mobile, règlement admin et PDF', async ({ pag
   await page.goto('/admin');
   const row = page.getByRole('row').filter({ hasText: name });
   await row.getByRole('button', { name: 'Marquer reçu' }).click();
+  await page.getByLabel('Date de réception', { exact: true }).fill('2026-11-06');
+  const recorded = page.waitForRequest(
+    (req) => req.url().endsWith('/api/action') && req.postDataJSON()?.action === 'payment',
+  );
   await page.getByRole('button', { name: 'Confirmer la réception' }).click();
+  expect((await recorded).postDataJSON().data.receivedAt).toBe('2026-11-06T12:00:00.000Z');
   await expect(row).toHaveCount(0);
   const pdf = await page.request.get('/api/admin/documents/catalogue');
   expect(pdf.status()).toBe(200);
@@ -56,6 +61,16 @@ test('un achat confirmé par le serveur mais interrompu sur le réseau ne se dup
   await page.getByRole('button', { name: 'Ajouter à mon ardoise', exact: false }).click();
   await expect(page.getByRole('button', { name: 'Retrouver ma confirmation' })).toBeVisible();
   await page.unroute('**/api/action');
+  await page.context().clearCookies();
+  await page.getByRole('button', { name: 'Retrouver ma confirmation' }).click();
+  await expect(page.getByRole('button', { name: 'Me connecter', exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(() => Object.keys(sessionStorage).some((key) => key.includes('_pending_'))),
+  ).toBe(true);
+  await page.getByLabel('Numéro de téléphone').fill('0790000001');
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Falcons-demo-2026!');
+  await page.getByRole('button', { name: 'Me connecter', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Kiosque', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Retrouver ma confirmation' }).click();
   await expect(page.getByRole('heading', { name: 'Achat enregistré' })).toBeVisible();
   const after = (await (await page.request.get('/api/state')).json()).data.ledger.balanceCents;

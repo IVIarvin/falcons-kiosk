@@ -35,6 +35,7 @@ export type CheckoutReceipt = {
   totalCents: number;
   balanceCents: number;
   quoteId: string | null;
+  quoteText?: string | null;
   replay: boolean;
 };
 export type FinancialSummary = {

@@ -2,6 +2,7 @@ import type { Database } from './db';
 import { assert } from './errors';
 import { requireAdmin, type Member } from '@/features/auth/service';
 const columns: Record<string, string[]> = {
+  piller_quotes: ['id', 'text', 'topic', 'enabled', 'revision'],
   users: [
     'id',
     'name',
@@ -29,6 +30,8 @@ const columns: Record<string, string[]> = {
     'created_at',
   ],
   purchases: [
+    'idempotency_key',
+    'request_hash',
     'id',
     'product_id',
     'quantity',
@@ -44,6 +47,7 @@ const columns: Record<string, string[]> = {
     'idempotency_key',
     'request_hash',
     'quote_id',
+    'quote_text',
     'created_at',
     'reversed_at',
     'reversed_by',
@@ -73,7 +77,18 @@ const columns: Record<string, string[]> = {
     'voided_at',
     'reason',
   ],
-  expenses: ['id', 'cents', 'reason', 'spent_at', 'actor_id'],
+  expenses: [
+    'id',
+    'cents',
+    'reason',
+    'spent_at',
+    'actor_id',
+    'idempotency_key',
+    'request_hash',
+    'voided_at',
+    'voided_by',
+    'void_reason',
+  ],
   audit: [
     'id',
     'actor_id',
@@ -101,12 +116,16 @@ export async function restoreBackup(db: Database, input: unknown) {
   const backup = input as { format?: unknown; tables?: Record<string, unknown> };
   assert(backup.format === 'falcons-backup-v1' && backup.tables, 'Format de sauvegarde invalide.');
   for (const name of Object.keys(columns))
-    assert(Array.isArray(backup.tables[name]), `Table absente : ${name}.`);
+    assert(
+      (name === 'piller_quotes' && backup.tables[name] === undefined) ||
+        Array.isArray(backup.tables[name]),
+      `Table absente : ${name}.`,
+    );
   await db.transaction(async (tx) => {
     const [{ count }] = await tx.query<{ count: string }>('SELECT count(*) AS count FROM users');
     assert(Number(count) === 0, 'La restauration exige une base vide.');
     for (const [name, fields] of Object.entries(columns)) {
-      const rows = backup.tables![name] as Record<string, unknown>[];
+      const rows = (backup.tables![name] ?? []) as Record<string, unknown>[];
       assert(rows.length <= 500000, 'Sauvegarde trop volumineuse.');
       for (const row of rows) {
         const values = fields.map((field) => {

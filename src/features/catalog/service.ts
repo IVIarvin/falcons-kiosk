@@ -6,6 +6,7 @@ import { assert } from '@/lib/errors';
 import { priceFromCost } from '@/lib/money';
 import { requireAdmin, type Member } from '@/features/auth/service';
 import { detailsSchema } from './details';
+import { requestHash } from '@/features/ledger/service';
 
 const productSchema = z.object({
   id: z.string().optional(),
@@ -75,20 +76,31 @@ const purchaseSchema = z.object({
 });
 export async function recordPurchase(db: Database, actor: Member, input: unknown) {
   requireAdmin(actor);
-  const p = purchaseSchema.parse(input);
+  const p = purchaseSchema.extend({ idempotencyKey: z.string().min(1).max(100) }).parse(input);
+  const { idempotencyKey, ...values } = p;
+  const hash = requestHash(values);
   const id = randomUUID();
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
+    await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [actor.id]);
+    const [existing] = await tx.query<{ id: string; request_hash: string }>(
+      'SELECT id,request_hash FROM purchases WHERE actor_id=$1 AND idempotency_key=$2',
+      [actor.id, idempotencyKey],
+    );
+    if (existing) {
+      assert(existing.request_hash === hash, 'Cette confirmation correspond à un autre achat.');
+      return { id: existing.id };
+    }
     assert(
       (await tx.query('SELECT id FROM products WHERE id=$1 FOR UPDATE', [p.productId])).length,
       'Produit introuvable.',
     );
     await tx.query(
-      'INSERT INTO purchases(id,product_id,quantity,total_cents,purchased_at,actor_id) VALUES($1,$2,$3,$4,$5,$6)',
-      [id, p.productId, p.quantity, p.totalCents, p.purchasedAt, actor.id],
+      'INSERT INTO purchases(id,product_id,quantity,total_cents,purchased_at,actor_id,idempotency_key,request_hash) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
+      [id, p.productId, p.quantity, p.totalCents, p.purchasedAt, actor.id, idempotencyKey, hash],
     );
     await refreshCost(tx, p.productId);
+    return { id };
   });
-  return { id };
 }
 async function refreshCost(db: Database, productId: string) {
   const [latest] = await db.query<{ quantity: number; total_cents: number }>(

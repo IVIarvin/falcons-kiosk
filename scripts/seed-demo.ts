@@ -84,6 +84,7 @@ try {
     });
     products.push(product);
     await recordPurchase(db, admin, {
+      idempotencyKey: `demo-purchase-${product.id}`,
       productId: product.id,
       quantity: 24,
       totalCents: Math.round((p.cost_micros / 10000) * 24),

@@ -83,6 +83,7 @@ function Settlements() {
               memberId: payment.id,
               cents: centsFromInput(String(values.amount)),
               kind: payment.balanceCents < 0 ? 'refund' : 'payment',
+              receivedAt: dateIso(String(values.date)),
             }
           : undefined,
       );
@@ -267,6 +268,15 @@ function Settlements() {
                 disabled={working}
               />
             </Field>
+            <Field label={payment.balanceCents < 0 ? 'Date de remboursement' : 'Date de réception'}>
+              <input
+                name="date"
+                type="date"
+                defaultValue={dateInput()}
+                required
+                disabled={working}
+              />
+            </Field>
             <button className="button primary full" disabled={working}>
               {working ? (
                 <Busy />
@@ -435,25 +445,37 @@ function PricePreview() {
   );
 }
 function Purchases() {
-  const { state, run, busy, notice } = useApp();
+  const { state, run, refresh, busy, notice } = useApp();
   const [open, setOpen] = useState(false);
   const [correction, setCorrection] = useState<ProcurementRow | null>(null);
-  async function save(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const f = formData(e);
+  const [working, setWorking] = useState(false);
+  const pending = pendingAction('purchase', state.user.id);
+  async function save(e?: FormEvent<HTMLFormElement>) {
+    e?.preventDefault();
+    const f = e ? formData(e) : null;
+    setWorking(true);
     try {
-      await run(correction ? 'correctPurchase' : 'purchase', {
-        ...(correction ? { id: correction.id, reason: String(f.reason) } : {}),
-        productId: String(f.productId),
-        quantity: Number(f.quantity),
-        totalCents: centsFromInput(String(f.total)),
-        purchasedAt: dateIso(String(f.date)),
-      });
+      const input = f
+        ? {
+            productId: String(f.productId),
+            quantity: Number(f.quantity),
+            totalCents: centsFromInput(String(f.total)),
+            purchasedAt: dateIso(String(f.date)),
+          }
+        : undefined;
+      if (correction && f)
+        await run('correctPurchase', { ...input, id: correction.id, reason: String(f.reason) });
+      else {
+        await durableAction('purchase', state.user.id, input);
+        await refresh();
+      }
       setOpen(false);
       setCorrection(null);
       notice('Achat enregistré. Les prix automatiques restent à confirmer.');
     } catch (e) {
       notice((e as Error).message);
+    } finally {
+      setWorking(false);
     }
   }
   return (
@@ -461,12 +483,20 @@ function Purchases() {
       <PageTitle title="Achats" subtitle="Les réapprovisionnements et leur coût réel.">
         <button
           className="button primary"
-          disabled={!state.products.length}
+          disabled={!state.products.length || working || !!pending}
           onClick={() => setOpen(true)}
         >
           <Plus size={18} /> Enregistrer un achat
         </button>
       </PageTitle>
+      {pending && (
+        <div className="notice-box">
+          <p>Un achat attend confirmation. Retrouve-le avant de le ressaisir.</p>
+          <button className="button secondary" disabled={working} onClick={() => void save()}>
+            <RefreshCw size={16} /> Retrouver l’achat
+          </button>
+        </div>
+      )}
       <PricePreview />
       {!state.admin!.purchases.length ? (
         <Empty title="Aucun réapprovisionnement enregistré.">
@@ -513,6 +543,7 @@ function Purchases() {
         <Dialog
           title={correction ? 'Corriger un achat' : 'Enregistrer un achat'}
           onClose={() => {
+            if (working) return;
             setOpen(false);
             setCorrection(null);
           }}
@@ -569,8 +600,8 @@ function Purchases() {
                 <textarea name="reason" required minLength={3} maxLength={300} />
               </Field>
             )}
-            <button className="button primary full" disabled={busy}>
-              {busy ? <Busy /> : 'Enregistrer'}
+            <button className="button primary full" disabled={busy || working}>
+              {busy || working ? <Busy /> : 'Enregistrer'}
             </button>
           </form>
         </Dialog>
@@ -857,9 +888,12 @@ function Members() {
   );
 }
 function Finance() {
-  const { state, run, busy, notice } = useApp();
+  const { state, run, refresh, busy, notice } = useApp();
   const [period, setPeriod] = useState<'week' | 'all'>('week');
   const [expense, setExpense] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [voiding, setVoiding] = useState<string | null>(null);
+  const pending = pendingAction('expense', state.user.id);
   const f = period === 'week' ? state.admin!.weekFinancial : state.admin!.financial;
   const metrics = [
     ['Ventes enregistrées', f.salesCents],
@@ -870,20 +904,38 @@ function Finance() {
     ['Autres dépenses', f.expensesCents],
     ['Variation de trésorerie', f.cashChangeCents],
   ] as const;
-  async function save(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const v = formData(e);
+  async function save(e?: FormEvent<HTMLFormElement>) {
+    e?.preventDefault();
+    const v = e ? formData(e) : null;
+    setWorking(true);
     try {
-      await run('expense', {
-        cents: centsFromInput(String(v.amount)),
-        reason: String(v.reason),
-        spentAt: dateIso(String(v.date)),
-      });
+      await durableAction(
+        'expense',
+        state.user.id,
+        v
+          ? {
+              cents: centsFromInput(String(v.amount)),
+              reason: String(v.reason),
+              spentAt: dateIso(String(v.date)),
+            }
+          : undefined,
+      );
+      await refresh();
       setExpense(false);
       notice('Dépense enregistrée.');
     } catch (e) {
       notice((e as Error).message);
+    } finally {
+      setWorking(false);
     }
+  }
+  async function cancel(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    try {
+      await run('voidExpense', { id: voiding, reason: String(formData(e).reason) });
+      setVoiding(null);
+      notice('Dépense annulée, historique conservé.');
+    } catch {}
   }
   return (
     <>
@@ -891,10 +943,22 @@ function Finance() {
         title="Suivi financier"
         subtitle="Les ventes, la marge et l’argent réellement encaissé."
       >
-        <button className="button secondary" onClick={() => setExpense(true)}>
+        <button
+          className="button secondary"
+          disabled={working || !!pending}
+          onClick={() => setExpense(true)}
+        >
           <Plus size={17} /> Autre dépense
         </button>
       </PageTitle>
+      {pending && (
+        <div className="notice-box">
+          <p>Une dépense attend confirmation. Retrouve-la avant de la ressaisir.</p>
+          <button className="button secondary" disabled={working} onClick={() => void save()}>
+            <RefreshCw size={16} /> Retrouver la dépense
+          </button>
+        </div>
+      )}
       <div className="category-tabs">
         <button className={period === 'week' ? 'selected' : ''} onClick={() => setPeriod('week')}>
           Cette semaine
@@ -930,14 +994,30 @@ function Finance() {
                 <th>Date</th>
                 <th>Motif</th>
                 <th>Montant</th>
+                <th>Correction</th>
               </tr>
             </thead>
             <tbody>
               {state.admin!.expenses.map((e) => (
                 <tr key={e.id}>
                   <td>{new Date(e.spent_at).toLocaleDateString('fr-CH')}</td>
-                  <td>{e.reason}</td>
+                  <td>
+                    {e.reason}
+                    {e.voided_at && <small>Annulée · {e.void_reason}</small>}
+                  </td>
                   <td>{formatCHF(e.cents)}</td>
+                  <td>
+                    {!e.voided_at && (
+                      <button
+                        className="button secondary compact"
+                        disabled={busy}
+                        onClick={() => setVoiding(e.id)}
+                        aria-label={`Annuler la dépense ${e.reason}`}
+                      >
+                        Annuler
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -947,7 +1027,12 @@ function Finance() {
         <Empty title="Aucune autre dépense enregistrée." />
       )}
       {expense && (
-        <Dialog title="Enregistrer une dépense" onClose={() => setExpense(false)}>
+        <Dialog
+          title="Enregistrer une dépense"
+          onClose={() => {
+            if (!working) setExpense(false);
+          }}
+        >
           <form onSubmit={save}>
             <Field label="Motif">
               <input name="reason" required minLength={3} maxLength={300} />
@@ -958,8 +1043,29 @@ function Finance() {
             <Field label="Date">
               <input name="date" type="date" defaultValue={dateInput()} required />
             </Field>
-            <button className="button primary full" disabled={busy}>
+            <button className="button primary full" disabled={busy || working}>
               Enregistrer la dépense
+            </button>
+          </form>
+        </Dialog>
+      )}
+      {voiding && (
+        <Dialog
+          title="Annuler une dépense"
+          onClose={() => {
+            if (!busy) setVoiding(null);
+          }}
+        >
+          <p>
+            L’opération d’origine reste dans l’historique. Enregistre ensuite le bon montant si
+            nécessaire.
+          </p>
+          <form onSubmit={cancel}>
+            <Field label="Motif d’annulation">
+              <textarea name="reason" required minLength={3} maxLength={300} />
+            </Field>
+            <button className="button primary full" disabled={busy}>
+              Confirmer l’annulation
             </button>
           </form>
         </Dialog>

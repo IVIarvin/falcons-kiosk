@@ -31,8 +31,11 @@ try {
   await page.getByText('Démonstration', { exact: false }).first().waitFor();
   const snapshot = (await (await page.request.get('http://127.0.0.1:3010/api/state')).json()).data;
   for (const product of snapshot.products.filter(
-        (p: { name: string; active: boolean }) =>
-          p.active && (p.name.startsWith('Produit QA ') || p.name === 'Coca-Cola Original QA' || /^Libre \d+$/.test(p.name)),
+    (p: { name: string; active: boolean }) =>
+      p.active &&
+      (p.name.startsWith('Produit QA ') ||
+        p.name === 'Coca-Cola Original QA' ||
+        /^Libre \d+$/.test(p.name)),
   )) {
     const result = await page.request.post('http://127.0.0.1:3010/api/action', {
       headers: { Origin: 'http://127.0.0.1:3010' },

@@ -59,6 +59,7 @@ describe('catalogue et journal financier', () => {
     const product = await saveProduct(db, admin, input);
     productId = product.id;
     await recordPurchase(db, admin, {
+      idempotencyKey: 'initial-procurement',
       productId,
       quantity: 24,
       totalCents: 2400,

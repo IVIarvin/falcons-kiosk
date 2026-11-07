@@ -1721,7 +1721,7 @@ input[type='date'] {
     margin: 0;
   }
   .quantity .icon-button {
-    min-width: 42px;
+    min-width: 44px;
     min-height: 44px;
   }
   .quantity output {
@@ -1772,8 +1772,8 @@ input[type='date'] {
     line-height: 1.5;
   }
   .voice-actions .icon-button {
-    min-width: 35px;
-    min-height: 38px;
+    min-width: 44px;
+    min-height: 44px;
     padding: 5px;
   }
   .receipt-panel > .button {

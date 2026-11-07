@@ -1,0 +1,31 @@
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.heading > small {
+  color: var(--accent);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.form > label {
+  margin-bottom: 18px;
+}
+.form > label > small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.editButton {
+  margin-top: 10px;
+  min-height: 44px;
+}
+@media (max-width: 760px) {
+  .actions > button {
+    flex: 1;
+  }
+}

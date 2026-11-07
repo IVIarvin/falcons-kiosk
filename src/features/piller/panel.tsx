@@ -1,19 +1,23 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Volume2, VolumeX, Play, AudioLines } from 'lucide-react';
 import { quotes, topicLabels, type QuoteTopic } from './quotes';
 import { Dialog } from '@/components/ui';
 import { useApp } from '@/components/context';
+import type { ManagedQuote } from './service';
+import styles from './editor.module.css';
 export function PillerComment({
   quoteId,
+  text,
   auto = false,
   forcePlay = false,
 }: {
   quoteId: string;
+  text?: string;
   auto?: boolean;
   forcePlay?: boolean;
 }) {
-  const quote = quotes.find((q) => q.id === quoteId);
+  const quote = text === undefined ? quotes.find((q) => q.id === quoteId) : { id: quoteId, text };
   const [muted, setMuted] = useState(false);
   const [voiceNote, setVoiceNote] = useState('');
   const played = useRef<string | null>(null);
@@ -54,7 +58,7 @@ export function PillerComment({
       clearTimeout(timer);
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     };
-  }, [quoteId, auto, forcePlay]);
+  }, [quoteId, text, auto, forcePlay]);
   if (!quote) return null;
   return (
     <div className="piller-comment">
@@ -65,10 +69,16 @@ export function PillerComment({
         {voiceNote && <small role="status">{voiceNote}</small>}
       </div>
       <div className="voice-actions">
-        <button className="icon-button" aria-label="Écouter la réplique" onClick={speak}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Écouter la réplique"
+          onClick={speak}
+        >
           <Volume2 size={21} />
         </button>
         <button
+          type="button"
           className="icon-button muted"
           onClick={() => {
             const value = !muted;
@@ -89,6 +99,9 @@ export function PillerAdminPanel() {
   const { state, run, busy } = useApp();
   const [example, setExample] = useState(false);
   const settings = state.admin?.settings;
+  const sample =
+    state.admin?.pillerQuotes.find((q) => q.enabled && q.topic === 'general') ??
+    state.admin?.pillerQuotes.find((q) => q.enabled);
   if (!settings) return null;
   return (
     <aside className="piller-panel">
@@ -117,14 +130,19 @@ export function PillerAdminPanel() {
       </div>
       <div className="piller-example">
         <h3>Exemple de réplique</h3>
-        {example ? (
-          <PillerComment quoteId="piller-v2-general-1" forcePlay />
+        {example && sample ? (
+          <PillerComment quoteId={sample.id} text={sample.text} forcePlay />
         ) : (
           <>
             <p className="sample-quote">
-              T’as le ravitaillement d’un régiment et le rendement d’une chaise pliante.
+              {sample?.text ??
+                'Toutes les répliques sont désactivées. Modifie leur activation dans les réglages.'}
             </p>
-            <button className="button secondary" onClick={() => setExample(true)}>
+            <button
+              className="button secondary"
+              disabled={!sample}
+              onClick={() => setExample(true)}
+            >
               <Play size={16} /> Écouter
             </button>
           </>
@@ -136,21 +154,23 @@ export function PillerAdminPanel() {
 }
 
 export function PillerLibrary() {
+  const { state } = useApp();
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState<QuoteTopic | 'all'>('all');
-  const active = quotes.filter((q) => !q.archived);
-  const visible = active.filter((q) => topic === 'all' || q.topic === topic);
+  const library = state.admin?.pillerQuotes ?? [];
+  const active = library.filter((q) => q.enabled);
+  const visible = library.filter((q) => topic === 'all' || q.topic === topic);
   return (
     <section className="piller-library">
       <div>
         <h2>Le répertoire de Piller</h2>
         <p>
-          {active.length} répliques. Langage de caserne, patience inexistante. Le panier donne le
-          ton.
+          {active.length} répliques actives sur {library.length}. Modifie leur texte, leur thème et
+          leur activation.
         </p>
       </div>
       <button type="button" className="button secondary" onClick={() => setOpen(true)}>
-        Voir les {active.length} répliques
+        Voir les {library.length} répliques
       </button>
       {open && (
         <Dialog title="Le répertoire de Piller" onClose={() => setOpen(false)}>
@@ -166,18 +186,136 @@ export function PillerLibrary() {
             </select>
           </label>
           <p className="muted">
-            {visible.length} répliques · Écoute un exemple pour tester la voix de cet appareil.
+            {visible.length} répliques · Les changements s’appliquent aux prochains achats.
           </p>
           <div className="quote-library-list">
             {visible.map((q) => (
-              <article key={q.id}>
-                <small>{topicLabels[q.topic]}</small>
-                <PillerComment quoteId={q.id} />
-              </article>
+              <QuoteEditor
+                key={q.id}
+                quote={q}
+                number={library.findIndex((item) => item.id === q.id) + 1}
+              />
             ))}
           </div>
         </Dialog>
       )}
     </section>
+  );
+}
+
+function QuoteEditor({ quote, number }: { quote: ManagedQuote; number: number }) {
+  const { run, busy } = useApp();
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(quote.text);
+  const [topic, setTopic] = useState(quote.topic);
+  const [enabled, setEnabled] = useState(quote.enabled);
+  const [revision, setRevision] = useState(quote.revision);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+  function edit() {
+    setText(quote.text);
+    setTopic(quote.topic);
+    setEnabled(quote.enabled);
+    setRevision(quote.revision);
+    setError('');
+    setSaved(false);
+    setEditing(true);
+  }
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    try {
+      await run('pillerQuote', { id: quote.id, text, topic, enabled, revision });
+      setEditing(false);
+      setSaved(true);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  return (
+    <article className={`quote-editor ${!quote.enabled ? 'quote-disabled' : ''}`}>
+      <div className={styles.heading}>
+        <small>
+          {number} · {topicLabels[quote.topic]}
+        </small>
+        <span className="status">{quote.enabled ? 'Active' : 'Désactivée'}</span>
+      </div>
+      {editing ? (
+        <form onSubmit={save} className={styles.form}>
+          <label className="field">
+            <span>Texte de la réplique</span>
+            <textarea
+              aria-label="Texte de la réplique"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={160}
+              required
+              disabled={busy}
+            />
+            <small>{text.length}/160 caractères</small>
+          </label>
+          <label className="field">
+            <span>Thème de la réplique</span>
+            <select
+              value={topic}
+              onChange={(e) => setTopic(e.target.value as QuoteTopic)}
+              disabled={busy}
+            >
+              {Object.entries(topicLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="check-line">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+              disabled={busy}
+            />{' '}
+            Réplique active
+          </label>
+          <PillerComment quoteId={quote.id} text={text} />
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className={styles.actions}>
+            <button type="submit" className="button primary" disabled={busy || !text.trim()}>
+              Enregistrer la réplique
+            </button>
+            <button
+              type="button"
+              className="button secondary"
+              disabled={busy}
+              onClick={() => setEditing(false)}
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <PillerComment quoteId={quote.id} text={quote.text} />
+          <button
+            type="button"
+            className={`text-button ${styles.editButton}`}
+            disabled={busy}
+            aria-label={`Modifier la réplique ${number}`}
+            onClick={edit}
+          >
+            Modifier
+          </button>
+          {saved && (
+            <p role="status" className="muted">
+              Réplique enregistrée.
+            </p>
+          )}
+        </>
+      )}
+    </article>
   );
 }

@@ -179,7 +179,13 @@ export function KioskView() {
               <p>{formatCHF(receipt.totalCents)} ajoutés à ton ardoise.</p>
             </div>
           </div>
-          {receipt.quoteId && <PillerComment quoteId={receipt.quoteId} auto={!receipt.replay} />}
+          {receipt.quoteId && (
+            <PillerComment
+              quoteId={receipt.quoteId}
+              text={receipt.quoteText ?? undefined}
+              auto={!receipt.replay}
+            />
+          )}
           <button className="button primary full" onClick={() => setReceipt(null)}>
             Continuer <ArrowRight size={18} />
           </button>

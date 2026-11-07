@@ -1,4 +1,12 @@
 'use client';
+export const authEvent = 'falcons-auth-change';
+function announceAuthChange() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(authEvent, crypto.randomUUID());
+  } catch {}
+  window.dispatchEvent(new Event(authEvent));
+}
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -21,12 +29,20 @@ export async function api<T = unknown>(action: string, data?: unknown): Promise<
     throw new ApiError('Connexion interrompue. Vérifie ton réseau avant de réessayer.');
   }
   const result = await response.json().catch(() => null);
-  if (!result?.ok)
+  if (!result?.ok) {
+    if (
+      response.status === 401 &&
+      !['login', 'register', 'reset'].includes(action) &&
+      typeof window !== 'undefined'
+    )
+      window.dispatchEvent(new Event(authEvent));
     throw new ApiError(
       result?.message ?? 'Réponse interrompue. Vérifie la confirmation avant de recommencer.',
       response.status,
       result?.code,
     );
+  }
+  if (['login', 'register', 'logout', 'password', 'reset'].includes(action)) announceAuthChange();
   return result.data as T;
 }
 export function pendingAction(action: string, userId: string): Record<string, unknown> | null {
@@ -62,7 +78,12 @@ export async function durableAction<T>(
     sessionStorage.removeItem(key);
     return result;
   } catch (e) {
-    if (e instanceof ApiError && e.status >= 400 && e.status < 500) sessionStorage.removeItem(key);
+    if (
+      e instanceof ApiError &&
+      [400, 409].includes(e.status) &&
+      ['INVALID', 'PRICE_CHANGED'].includes(e.code)
+    )
+      sessionStorage.removeItem(key);
     throw e;
   }
 }

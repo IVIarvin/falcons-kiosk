@@ -12,7 +12,13 @@ export const topicLabels = {
   bulk: 'Gros paniers',
 } as const;
 export type QuoteTopic = keyof typeof topicLabels;
-export type Quote = { id: string; text: string; topic: QuoteTopic; archived?: boolean };
+export type Quote = {
+  id: string;
+  text: string;
+  topic: QuoteTopic;
+  archived?: boolean;
+  enabled?: boolean;
+};
 const legacyQuotes: Quote[] = [
   'Encore toi ? Le frigo n’est pas ton paquetage personnel, espèce de rapace.',
   'Achat confirmé. Ta discipline, elle, est toujours portée disparue.',
@@ -131,7 +137,17 @@ type QuoteLine = {
   product: { is_beverage: boolean; details?: Partial<ProductDetails> };
   quantity: number;
 };
-export function selectQuote(previousId?: string | null, lines: readonly QuoteLine[] = []) {
+export function selectQuote(previousId?: string | null, lines?: readonly QuoteLine[]): Quote;
+export function selectQuote(
+  previousId: string | null | undefined,
+  lines: readonly QuoteLine[],
+  pool: readonly Quote[],
+): Quote | undefined;
+export function selectQuote(
+  previousId?: string | null,
+  lines: readonly QuoteLine[] = [],
+  pool: readonly Quote[] = quotes,
+) {
   const topics = new Set<QuoteTopic>();
   for (const { product } of lines) {
     const d = product.details;
@@ -144,12 +160,14 @@ export function selectQuote(previousId?: string | null, lines: readonly QuoteLin
     else if (product.is_beverage && d?.sugar === 'none') topics.add('sugar-free');
   }
   if (lines.reduce((sum, l) => sum + l.quantity, 0) >= 4) topics.add('bulk');
-  const contextual = topics.size > 0 && Math.random() < 0.8;
-  const choices = quotes.filter(
-    (q) =>
-      !q.archived &&
-      q.id !== previousId &&
-      (contextual ? topics.has(q.topic) : q.topic === 'general'),
+  const eligible = pool.filter(
+    (q) => !q.archived && q.enabled !== false && (q.topic === 'general' || topics.has(q.topic)),
   );
+  const fresh = eligible.filter((q) => q.id !== previousId);
+  const available = fresh.length ? fresh : eligible;
+  const contextual = available.filter((q) => topics.has(q.topic));
+  const general = available.filter((q) => q.topic === 'general');
+  const choices =
+    contextual.length && (!general.length || Math.random() < 0.8) ? contextual : general;
   return choices[Math.floor(Math.random() * choices.length)];
 }

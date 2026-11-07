@@ -5,7 +5,8 @@ import type { CheckoutReceipt, Product } from '@/lib/types';
 import { assert } from '@/lib/errors';
 import type { Member } from '@/features/auth/service';
 import { balance, requestHash } from '@/features/ledger/service';
-import { selectQuote } from '@/features/piller/quotes';
+import { quotes, selectQuote } from '@/features/piller/quotes';
+import { getPillerQuotes } from '@/features/piller/service';
 
 const schema = z.object({
   idempotencyKey: z.string().min(1).max(100),
@@ -37,11 +38,12 @@ export async function checkout(
       'SELECT active FROM users WHERE id=$1 FOR UPDATE',
       [actor.id],
     );
-    assert(member?.active, 'Compte désactivé.');
+    assert(member?.active, 'Compte désactivé.', 'AUTH', 401);
     const [existing] = await tx.query<{
       id: string;
       total_cents: number;
       quote_id: string | null;
+      quote_text: string | null;
       request_hash: string;
     }>('SELECT * FROM consumptions WHERE user_id=$1 AND idempotency_key=$2', [
       actor.id,
@@ -54,6 +56,8 @@ export async function checkout(
         totalCents: existing.total_cents,
         balanceCents: await balance(tx, actor.id),
         quoteId: existing.quote_id,
+        quoteText:
+          existing.quote_text ?? quotes.find((q) => q.id === existing.quote_id)?.text ?? null,
         replay: true,
       };
     }
@@ -82,10 +86,14 @@ export async function checkout(
       'SELECT quote_id FROM consumptions WHERE user_id=$1 AND quote_id IS NOT NULL ORDER BY created_at DESC LIMIT 1',
       [actor.id],
     );
-    const quoteId = settings.piller_enabled ? selectQuote(previous?.quote_id, resolved).id : null;
+    const quote = settings.piller_enabled
+      ? selectQuote(previous?.quote_id, resolved, await getPillerQuotes(tx))
+      : undefined;
+    const quoteId = quote?.id ?? null;
+    const quoteText = quote?.text ?? null;
     await tx.query(
-      'INSERT INTO consumptions(id,user_id,total_cents,idempotency_key,request_hash,quote_id) VALUES($1,$2,$3,$4,$5,$6)',
-      [id, actor.id, total, p.idempotencyKey, hash, quoteId],
+      'INSERT INTO consumptions(id,user_id,total_cents,idempotency_key,request_hash,quote_id,quote_text) VALUES($1,$2,$3,$4,$5,$6,$7)',
+      [id, actor.id, total, p.idempotencyKey, hash, quoteId, quoteText],
     );
     for (const { product, quantity } of resolved)
       await tx.query(
@@ -107,6 +115,7 @@ export async function checkout(
       totalCents: total,
       balanceCents: await balance(tx, actor.id),
       quoteId,
+      quoteText,
       replay: false,
     };
   });

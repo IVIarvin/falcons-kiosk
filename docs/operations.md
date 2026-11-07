@@ -6,6 +6,8 @@ Les membres s'inscrivent et consomment sans validation. Le responsable gère les
 
 Il n'y a pas de remise à zéro hebdomadaire. Une nouvelle consommation après une demande de paiement reste due. Une correction conserve l'opération d'origine et le motif. Si une consommation réglée est annulée, l'avoir peut être utilisé ou remboursé ; le remboursement se fait extérieurement avant d'être enregistré.
 
+La date de réception se choisit à l'enregistrement : un règlement reçu vendredi mais saisi lundi doit garder la date du vendredi. Une dépense erronée s'annule avec un motif depuis le suivi financier ; son montant d'origine reste visible et elle est exclue des totaux actifs. Renseigner ensuite la dépense correcte si nécessaire.
+
 Une opération signalée comme incertaine doit être retrouvée via son bouton de vérification, pas ressaisie avec une nouvelle identité. Les confirmations serveur et les clés conservées dans l'onglet empêchent les doublons. La validation bancaire reste manuelle.
 
 ## Prix et marge

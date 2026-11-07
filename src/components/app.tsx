@@ -19,7 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import type { Snapshot } from '@/lib/application';
-import { api, ApiError } from '@/lib/client';
+import { api, ApiError, authEvent } from '@/lib/client';
 import { AppContext } from './context';
 import { Logo } from './ui';
 import { AuthForm } from '@/features/auth/form';
@@ -78,6 +78,38 @@ export function App({ demo = false }: { demo?: boolean }) {
     void refresh();
   }, [refresh, pathname]);
   useEffect(() => {
+    const sync = () => {
+      ++generation.current;
+      setState(null);
+      setLoaded(false);
+      setBusy(false);
+      setFailure('');
+      setToast('');
+      void refresh();
+    };
+    const storage = (event: StorageEvent) => {
+      if (event.key === authEvent) sync();
+    };
+    const visible = () => {
+      if (document.visibilityState === 'visible') sync();
+    };
+    const restored = (event: PageTransitionEvent) => {
+      if (event.persisted) sync();
+    };
+    window.addEventListener(authEvent, sync);
+    window.addEventListener('storage', storage);
+    window.addEventListener('focus', visible);
+    window.addEventListener('pageshow', restored);
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      window.removeEventListener(authEvent, sync);
+      window.removeEventListener('storage', storage);
+      window.removeEventListener('focus', visible);
+      window.removeEventListener('pageshow', restored);
+      document.removeEventListener('visibilitychange', visible);
+    };
+  }, [refresh]);
+  useEffect(() => {
     const yes = () => {
       setOnline(true);
       void refresh();
@@ -93,6 +125,7 @@ export function App({ demo = false }: { demo?: boolean }) {
   }, [refresh]);
   useEffect(() => {
     if (loaded && !state && !authRoute && !failure) router.replace('/connexion');
+    if (loaded && state && authRoute) router.replace('/');
   }, [loaded, state, authRoute, failure, router]);
   useEffect(() => {
     if (!toast) return;
@@ -160,7 +193,10 @@ export function App({ demo = false }: { demo?: boolean }) {
   const admin = pathname.startsWith('/admin') && state.user.role === 'admin';
   const links = admin ? adminLinks : memberLinks;
   return (
-    <AppContext.Provider value={{ state, busy, refresh, run, notice: setToast }}>
+    <AppContext.Provider
+      key={state.user.id}
+      value={{ state, busy, refresh, run, notice: setToast }}
+    >
       <div className={`app-shell ${admin ? 'admin-shell' : 'member-shell'}`}>
         <aside className="sidebar">
           <Link href={admin ? '/admin' : '/'} className="brand-link">

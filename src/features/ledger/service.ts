@@ -170,6 +170,10 @@ export async function voidPayment(db: Database, actor: Member, input: unknown) {
       [p.id, p.reason],
     );
     assert(rows.length, 'Ce paiement est déjà annulé.');
+    await tx.query(
+      'INSERT INTO audit(id,actor_id,action,reference_id,reason,after_data) VALUES($1,$2,$3,$4,$5,$6)',
+      [randomUUID(), actor.id, 'payment-void', p.id, p.reason, JSON.stringify({ voided: true })],
+    );
   });
 }
 export async function recordExpense(db: Database, actor: Member, input: unknown) {
@@ -179,15 +183,37 @@ export async function recordExpense(db: Database, actor: Member, input: unknown)
       cents: z.number().int().min(1).max(100000000),
       reason: z.string().trim().min(3).max(300),
       spentAt: z.string().datetime(),
+      idempotencyKey: z.string().min(1).max(100),
     })
     .parse(input);
-  await db.query('INSERT INTO expenses(id,cents,reason,spent_at,actor_id) VALUES($1,$2,$3,$4,$5)', [
-    randomUUID(),
-    p.cents,
-    p.reason,
-    p.spentAt,
-    actor.id,
-  ]);
+  const { idempotencyKey, ...values } = p;
+  const hash = requestHash(values);
+  return db.transaction(async (tx) => {
+    await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [actor.id]);
+    const [existing] = await tx.query<{ id: string; request_hash: string }>(
+      'SELECT id,request_hash FROM expenses WHERE actor_id=$1 AND idempotency_key=$2',
+      [actor.id, idempotencyKey],
+    );
+    if (existing) {
+      assert(existing.request_hash === hash, 'Cette confirmation correspond à une autre dépense.');
+      return { id: existing.id };
+    }
+    const id = randomUUID();
+    await tx.query(
+      'INSERT INTO expenses(id,cents,reason,spent_at,actor_id,idempotency_key,request_hash) VALUES($1,$2,$3,$4,$5,$6,$7)',
+      [id, p.cents, p.reason, p.spentAt, actor.id, idempotencyKey, hash],
+    );
+    return { id };
+  });
+}
+export async function voidExpense(db: Database, actor: Member, input: unknown) {
+  requireAdmin(actor);
+  const p = z.object({ id: z.string(), reason: z.string().trim().min(3).max(300) }).parse(input);
+  const rows = await db.query(
+    'UPDATE expenses SET voided_at=now(),voided_by=$2,void_reason=$3 WHERE id=$1 AND voided_at IS NULL RETURNING id',
+    [p.id, actor.id, p.reason],
+  );
+  assert(rows.length, 'Dépense introuvable ou déjà annulée.');
 }
 export async function completeCosts(db: Database, actor: Member, input: unknown) {
   requireAdmin(actor);
@@ -252,7 +278,7 @@ export async function getFinancialSummary(
     [from, to],
   );
   const [expenses] = await db.query<{ value: string }>(
-    'SELECT COALESCE(sum(cents),0) AS value FROM expenses WHERE spent_at >= $1 AND spent_at < $2',
+    'SELECT COALESCE(sum(cents),0) AS value FROM expenses WHERE voided_at IS NULL AND spent_at >= $1 AND spent_at < $2',
     [from, to],
   );
   const accounts = await getAccounts(db, actor);

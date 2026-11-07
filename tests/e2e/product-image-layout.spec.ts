@@ -18,12 +18,10 @@ test('les photos verticales restent dans leurs cadres sur ordinateur et téléph
       Promise.all([...document.images].map((image) => image.decode())),
     );
     for (const selector of ['.preview-image', '.lookup-image', '.admin-product-image']) {
-      const { frame, image } = await page
-        .locator(selector)
-        .evaluate((el) => ({
-          frame: el.getBoundingClientRect().toJSON(),
-          image: el.querySelector('img')!.getBoundingClientRect().toJSON(),
-        }));
+      const { frame, image } = await page.locator(selector).evaluate((el) => ({
+        frame: el.getBoundingClientRect().toJSON(),
+        image: el.querySelector('img')!.getBoundingClientRect().toJSON(),
+      }));
       expect(image.bottom, `${selector} à ${width}px : bas de la photo`).toBeLessThanOrEqual(
         frame.bottom + 1,
       );
