@@ -1,0 +1,8 @@
+node_modules
+.next
+.data
+.impeccable
+.superpowers
+pnpm-lock.yaml
+public/sw.js
+public/offline.html

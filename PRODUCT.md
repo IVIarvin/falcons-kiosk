@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Aucun code applicatif n'existe encore. Hébergement confirmé : Vercel. La moodboard et les deux écrans de la direction tactique v3 ont été validés explicitement par le demandeur. Proposition technique dans le plan : Next.js avec TypeScript, PostgreSQL en production et PostgreSQL embarqué pour le développement local. Ces choix techniques sont des recommandations, pas des contraintes formulées par le demandeur.
+Application Next.js avec TypeScript, React, PostgreSQL en production et PGlite persistant en développement local. Hébergement confirmé : Vercel ; aucun déploiement public effectué à ce stade. La moodboard et les deux écrans tactiques v3, puis le plan de développement, ont été validés explicitement. Le demandeur a choisi l'exécution native dans le dossier actuel.
 
 ## Users
 
@@ -29,7 +29,7 @@ La personne choisit des produits, confirme leur ajout à son ardoise puis les pr
 ## Capabilities and Constraints
 
 - Compte avec grade, nom et téléphone ; inscription sans validation administrative.
-- Catalogue et coûts d'achat gérés par l'administrateur ; majoration en pourcentage souhaitée, prix manuel proposé en complément.
+- Catalogue et coûts d'achat gérés par l'administrateur ; majoration générale en pourcentage et prix manuels, avec publication explicite des tarifs automatiques.
 - Consommations, historique personnel, solde, règlements traçables et dettes reportées.
 - Pas d'intégration TWINT en V1.
 - Succès hebdomadaires, classement des boissons et classement des contributeurs calculé sur le montant des achats, jamais sur leur marge ou la date de paiement.
@@ -38,8 +38,8 @@ La personne choisit des produits, confirme leur ajout à son ardoise puis les pr
 - Paramètre administrateur « Activer Adjudant Piller » : une réplique humoristique et insultante issue d'une liste préétablie s'affiche après chaque achat confirmé et est lue à voix haute en parallèle. Le texte reste visible si le son est coupé sur le téléphone.
 - Français, CHF et fuseau Europe/Zurich.
 - Les téléphones, dettes et achats détaillés d'autres membres sont réservés aux administrateurs ; les classements de section exposent les seuls agrégats sociaux prévus au PRD après connexion.
-- L'inventaire détaillé reste hors V1 dans la proposition actuelle ; la marge est une estimation à partir des coûts renseignés.
-- Restent à confirmer : code de section éventuel, arrondi des prix, autres dépenses, certains détails des succès. Les choix proposés sont identifiés dans le PRD.
+- L'inventaire détaillé reste hors V1 ; la marge est une estimation à partir des coûts renseignés.
+- Le plan approuvé retient l'inscription par lien, l'arrondi automatique à CHF 0.05 et la saisie des autres dépenses. Ce sont des choix de mise en œuvre approuvés avec le plan, pas des demandes initiales explicites.
 
 ## Brand Commitments
 

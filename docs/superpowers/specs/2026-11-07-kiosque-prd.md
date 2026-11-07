@@ -1,6 +1,6 @@
 # PRD — Kiosque Falcons
 
-Version : 0.5 — direction tactique mature à valider avant développement  
+Version : 0.5 — direction tactique v3 et plan d'implémentation approuvés le 7 novembre 2026  
 Date : 7 novembre 2026  
 Public initial : une section d'au moins 60 personnes  
 Devise : CHF ; fuseau : Europe/Zurich
