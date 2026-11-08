@@ -342,7 +342,7 @@ function Products() {
         </Empty>
       ) : (
         <div className="table-wrap">
-          <table>
+          <table className="responsive-records products-table" role="table">
             <thead>
               <tr>
                 <th>Produit</th>
@@ -356,7 +356,7 @@ function Products() {
             <tbody>
               {state.products.map((p) => (
                 <tr key={p.id}>
-                  <td>
+                  <td className="record-title">
                     <div className="admin-product">
                       <span className="admin-product-image">
                         <ProductImage src={p.image} name={p.name} />
@@ -368,30 +368,31 @@ function Products() {
                       {p.details.kind !== 'unknown' ? ` · ${kindLabels[p.details.kind]}` : ''}
                     </small>
                   </td>
-                  <td>
+                  <td data-label="Prix de vente">
                     {formatCHF(p.price_cents)}
                     <small>{p.price_mode === 'auto' ? 'Calcul automatique' : 'Prix manuel'}</small>
                   </td>
-                  <td>
+                  <td data-label="Prix d’achat / article">
                     {p.cost_micros === null ? 'Non renseigné' : formatCHF(p.cost_micros / 10000)}
                   </td>
-                  <td>
+                  <td data-label="Écart / article">
                     {p.cost_micros === null
                       ? 'À renseigner'
                       : formatCHF(p.price_cents - p.cost_micros / 10000)}
                   </td>
-                  <td>
+                  <td data-label="État">
                     <span className={`status ${p.active ? 'positive' : ''}`}>
                       {!p.active ? 'Désactivé' : 'Au catalogue'}
                     </span>
                   </td>
-                  <td>
+                  <td className="record-actions">
                     <button
                       className="icon-button"
                       aria-label={`Modifier ${p.name}`}
                       onClick={() => setEditing(p)}
                     >
                       <Pencil size={17} />
+                      <span className="mobile-action-label">Modifier</span>
                     </button>
                   </td>
                 </tr>
@@ -529,7 +530,7 @@ function Purchases() {
         </Empty>
       ) : (
         <div className="table-wrap">
-          <table>
+          <table className="responsive-records purchases-table" role="table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -542,11 +543,13 @@ function Purchases() {
             <tbody>
               {state.admin!.purchases.map((p) => (
                 <tr key={p.id}>
-                  <td>{new Date(p.purchased_at).toLocaleDateString('fr-CH')}</td>
-                  <td>{p.product_name}</td>
-                  <td>{p.quantity}</td>
-                  <td>{formatCHF(p.total_cents)}</td>
-                  <td>
+                  <td data-label="Date">{new Date(p.purchased_at).toLocaleDateString('fr-CH')}</td>
+                  <td className="record-title">{p.product_name}</td>
+                  <td data-label="Unités">{p.quantity}</td>
+                  <td data-label="Total payé" className="record-amount">
+                    {formatCHF(p.total_cents)}
+                  </td>
+                  <td className="record-actions">
                     <button
                       className="icon-button"
                       aria-label={`Corriger l’achat ${p.product_name}`}
@@ -559,6 +562,7 @@ function Purchases() {
                       }}
                     >
                       <Pencil size={17} />
+                      <span className="mobile-action-label">Corriger</span>
                     </button>
                   </td>
                 </tr>
@@ -1055,7 +1059,7 @@ function Finance() {
       <h2 className="section-heading">Autres dépenses</h2>
       {state.admin!.expenses.length ? (
         <div className="table-wrap">
-          <table>
+          <table className="responsive-records expenses-table" role="table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -1067,13 +1071,15 @@ function Finance() {
             <tbody>
               {state.admin!.expenses.map((e) => (
                 <tr key={e.id}>
-                  <td>{new Date(e.spent_at).toLocaleDateString('fr-CH')}</td>
-                  <td>
+                  <td data-label="Date">{new Date(e.spent_at).toLocaleDateString('fr-CH')}</td>
+                  <td className="record-title">
                     {e.reason}
                     {e.voided_at && <small>Annulée · {e.void_reason}</small>}
                   </td>
-                  <td>{formatCHF(e.cents)}</td>
-                  <td>
+                  <td data-label="Montant" className="record-amount">
+                    {formatCHF(e.cents)}
+                  </td>
+                  <td className="record-actions">
                     {!e.voided_at && (
                       <button
                         className="button secondary compact"

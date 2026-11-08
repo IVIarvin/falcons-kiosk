@@ -2442,6 +2442,176 @@ input[type='date'] {
     padding-inline: 8px;
   }
 }
+.crew-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.crew-metrics {
+  flex: 1 1 280px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+.crew-metrics button {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.crew-period {
+  flex: 1 1 200px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.crew-period select {
+  width: 100%;
+  min-height: 44px;
+}
+.mobile-action-label {
+  display: none;
+}
+@media (max-width: 760px) {
+  .category-tabs button {
+    flex-basis: auto;
+    overflow-wrap: anywhere;
+  }
+  .crew-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .crew-metrics {
+    margin: 0;
+  }
+  .crew-metrics button {
+    min-height: 48px;
+    padding: 12px 8px;
+  }
+  .ranking-list li > div {
+    min-width: 0;
+  }
+  .ranking-list li > div > strong {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    overflow-wrap: anywhere;
+  }
+  .rank-number,
+  .ranking-list li > strong:last-of-type,
+  .ranking-list li > svg {
+    flex-shrink: 0;
+  }
+  .admin-mobile-nav a {
+    font-size: 12px;
+  }
+  .table-wrap .responsive-records {
+    display: block;
+    min-width: 0;
+  }
+  .responsive-records thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .responsive-records tbody {
+    display: block;
+  }
+  .responsive-records tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+    padding: 18px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .responsive-records tr:last-child {
+    border-bottom: 0;
+  }
+  .responsive-records td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .responsive-records td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .responsive-records .record-title {
+    grid-column: 1 / -1;
+    order: -1;
+    font-weight: 600;
+    font-size: 17px;
+  }
+  .responsive-records .record-amount {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .responsive-records .record-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+  }
+  .responsive-records .record-actions button {
+    min-height: 44px;
+  }
+  .responsive-records .record-actions .icon-button {
+    width: auto;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .mobile-action-label {
+    display: inline;
+    font-size: 15px;
+  }
+  .products-table .record-actions,
+  .expenses-table .record-actions {
+    grid-column: 1 / -1;
+  }
+  .record-actions:empty {
+    display: none;
+  }
+  .responsive-records .admin-product {
+    min-width: 0;
+  }
+  .responsive-records .admin-product strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .finance-grid strong {
+    white-space: nowrap;
+  }
+  .finance-grid article:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 360px) {
+  .finance-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .finance-grid article {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 14px;
+  }
+  .finance-grid strong {
+    margin: 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto !important;

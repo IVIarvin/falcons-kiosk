@@ -6,7 +6,9 @@ import { Empty, PageTitle } from '@/components/ui';
 import { formatCHF } from '@/lib/money';
 export function CrewView() {
   const { state } = useApp();
-  const [mode, setMode] = useState<'contributors' | 'drinks' | 'allTime'>('contributors');
+  const [metric, setMetric] = useState<'contributors' | 'drinks'>('contributors');
+  const [period, setPeriod] = useState<'week' | 'allTime'>('week');
+  const mode = metric === 'drinks' ? 'drinks' : period === 'allTime' ? 'allTime' : 'contributors';
   const data = state.community;
   const ranks = data[mode];
   return (
@@ -26,19 +28,32 @@ export function CrewView() {
           </p>
         </div>
       </div>
-      <div className="category-tabs">
-        <button
-          className={mode === 'contributors' ? 'selected' : ''}
-          onClick={() => setMode('contributors')}
-        >
-          Contributeurs
-        </button>
-        <button className={mode === 'drinks' ? 'selected' : ''} onClick={() => setMode('drinks')}>
-          Buveurs
-        </button>
-        <button className={mode === 'allTime' ? 'selected' : ''} onClick={() => setMode('allTime')}>
-          Depuis le début
-        </button>
+      <div className="crew-controls">
+        <div className="category-tabs crew-metrics" role="group" aria-label="Type de classement">
+          <button
+            className={metric === 'contributors' ? 'selected' : ''}
+            aria-pressed={metric === 'contributors'}
+            onClick={() => setMetric('contributors')}
+          >
+            Contributeurs
+          </button>
+          <button
+            className={metric === 'drinks' ? 'selected' : ''}
+            aria-pressed={metric === 'drinks'}
+            onClick={() => setMetric('drinks')}
+          >
+            Buveurs
+          </button>
+        </div>
+        {metric === 'contributors' && (
+          <label className="crew-period">
+            <span>Période des contributions</span>
+            <select value={period} onChange={(e) => setPeriod(e.target.value as typeof period)}>
+              <option value="week">Cette semaine</option>
+              <option value="allTime">Depuis le début</option>
+            </select>
+          </label>
+        )}
       </div>
       <p className="muted small">
         {mode === 'drinks'
