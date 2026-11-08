@@ -59,14 +59,18 @@ export function createPillerPlayer(deps: Dependencies) {
       }
       const key = await browserTextKey(text);
       if (current !== generation) return;
-      const entry = manifest.entries[key];
-      if (!entry || entry.file !== `/audio/piller/${manifest.voice.id}/${key}.mp3`) {
+      const currentEntry = manifest.entries[key];
+      const historical = !currentEntry ? manifest.archives?.[key] : undefined;
+      const entry = currentEntry ?? historical;
+      const profile = historical?.voice ?? manifest.voice;
+      if (!entry || entry.file !== `/audio/piller/${profile.id}/${key}.mp3`) {
         deps.note('Audio dédié non préparé pour cette réplique. Le texte reste disponible.');
         return;
       }
       audio = deps.createAudio(entry.file);
+      const playbackNote = historical ? 'Enregistrement vocal historique.' : '';
       audio.onplay = () => {
-        if (current === generation) deps.note('');
+        if (current === generation) deps.note(playbackNote);
       };
       audio.onerror = () => {
         if (current === generation)

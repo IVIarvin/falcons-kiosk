@@ -30,6 +30,21 @@ function dependencies(loadManifest: () => Promise<VoiceManifest>) {
     note: vi.fn(),
   };
 }
+it('retrouve un ancien texte dans les enregistrements historiques explicitement versionnés', async () => {
+  const oldText = 'Ancien texte conservé';
+  const previous = await manifest(oldText);
+  const key = await browserTextKey(oldText);
+  const current = {
+    version: 1 as const,
+    voice: { id: 'c'.repeat(64), name: 'Nouveau Piller' },
+    entries: {},
+    archives: { [key]: { ...previous.entries[key], voice: previous.voice! } },
+  };
+  const deps = dependencies(async () => current);
+  await createPillerPlayer(deps).play(oldText);
+  expect(deps.createAudio).toHaveBeenCalledWith(previous.entries[key].file);
+  expect(deps.speakNative).not.toHaveBeenCalled();
+});
 it('lit le MP3 exact et conserve le texte accentué sans altération', async () => {
   const text = 'Café noir. Sans sucre.';
   expect(await browserTextKey(text)).toBe(textKey(text));

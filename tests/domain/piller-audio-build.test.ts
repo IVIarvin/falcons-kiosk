@@ -87,6 +87,7 @@ it('réutilise les fichiers, conserve l’ancien texte et invalide une autre voi
   const changed = JSON.parse(await readFile(path.join(directory, 'manifest.json'), 'utf8'));
   expect(changed.voice.id).not.toBe(manifest.voice.id);
   expect(changed.entries[textKey(bank[0].text)]).toBeUndefined();
+  expect(changed.archives?.[textKey(bank[0].text)]).toMatchObject({ voice: manifest.voice });
 });
 it('une réponse perdue ne déclenche aucune reprise payante automatique', async () => {
   const directory = await root();

@@ -119,11 +119,11 @@ test('exporte la banque et lit seulement les MP3 exacts, sans appel vocal payant
     ),
   ).toEqual([]);
   expect(voiceCalls).toBe(0);
-  await mkdir('.impeccable/review/piller-voice', { recursive: true });
+  if(process.env.PILLER_CAPTURE==='1')await mkdir('.impeccable/review/piller-voice', { recursive: true });
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.evaluate(() => document.fonts.ready);
-    await page.screenshot({
+    if(process.env.PILLER_CAPTURE==='1')await page.screenshot({
       path: `.impeccable/review/piller-voice/${width === 1440 ? 'desktop' : width === 320 ? 'mobile-320' : 'mobile'}.png`,
       fullPage: true,
     });

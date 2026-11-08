@@ -69,6 +69,10 @@ export async function buildVoiceBank(options: Options) {
   const manifestPath = path.join(options.directory, 'manifest.json');
   const previous = await readManifest(manifestPath);
   const entries: VoiceManifest['entries'] = {};
+  const archives: NonNullable<VoiceManifest['archives']> = { ...previous.archives };
+  if (previous.voice && previous.voice.id !== id)
+    for (const [key, entry] of Object.entries(previous.entries))
+      archives[key] = { ...entry, voice: previous.voice };
   if (previous.voice?.id === id) Object.assign(entries, previous.entries);
   const missing: { text: string; key: string; file: string }[] = [];
   for (const quote of quotes) {
@@ -178,7 +182,12 @@ export async function buildVoiceBank(options: Options) {
       );
       result.generated++;
     }
-    const manifest: VoiceManifest = { version: 1, voice: { id, name: profile.name }, entries };
+    const manifest: VoiceManifest = {
+      version: 1,
+      voice: { id, name: profile.name },
+      entries,
+      archives,
+    };
     await atomicWrite(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
     return result;
   } finally {

@@ -30,6 +30,8 @@ Description de la voix : homme francophone de 50–60 ans, basse profonde et ré
 
 L'outil écrit jusqu'à trois MP3 sous `.data/piller-voice/` et affiche leurs chemins. Écouter les propositions avant de retenir un numéro. Aucun audio réel n'est fourni par une simulation ou les tests.
 
+Chaque nouvelle série utilise un dossier distinct : une interruption ne remplace pas les fichiers de la série précédente. Si une préparation d'essais reste incertaine, la sélection est suspendue jusqu'à résolution. Si des fichiers ont été déplacés ou supprimés manuellement, vérifier les chemins affichés : le cache de l'index ne vérifie pas encore leur présence lors d'une simple réutilisation.
+
 ```sh
 pnpm voice:select --sample 2
 pnpm voice:select --sample 2 --generate
@@ -58,9 +60,11 @@ Vérifier quelques vrais enregistrements dans l'application, puis livrer le mani
 
 Avant la première préparation, le manifeste contient `voice: null` et la voix existante du téléphone reste en service. Après activation, le lecteur utilise uniquement la voix dédiée. Un fichier manquant affiche un message ; le texte reste disponible et aucune voix différente ne le remplace silencieusement.
 
-Quand l'admin modifie une phrase, exporter et préparer à nouveau la banque. Seuls les nouveaux textes sont générés. Les anciens fichiers restent disponibles pour les achats historiques. Changer de voix exige de préparer les textes avec cette nouvelle identité ; les fichiers de l'ancienne voix ne sont pas associés à la nouvelle.
+Quand l'admin modifie une phrase, exporter et préparer à nouveau la banque. Seuls les nouveaux textes sont générés. Les anciens fichiers restent disponibles pour les achats historiques. Changer de voix exige de préparer les textes actuels avec cette nouvelle identité. Les anciens textes conservent un accès explicitement historique à leur enregistrement précédent ; celui-ci n'est pas présenté comme appartenant à la nouvelle voix.
 
 Le manifeste est relu sur le réseau ; le service worker ne le conserve pas. Il peut conserver les MP3 publics identifiés par leur contenu, sans mettre en cache les routes de compte.
+
+Les demandes de lecture partielle sont laissées au réseau et ne sont pas stockées comme fichiers complets. Un échec du cache facultatif ne doit pas empêcher la lecture du fichier reçu.
 
 ## État de la première intégration
 

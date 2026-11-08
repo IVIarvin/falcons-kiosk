@@ -1,6 +1,6 @@
 # Piller Dedicated Voice Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Préparer et intégrer une voix masculine grave ElevenLabs sous forme de MP3 réutilisables, sans appel payant pendant les achats.
 
@@ -33,9 +33,9 @@
 
 **Interfaces:** `buildVoiceBank`, calcul SHA-256, manifeste version1 ; commandes `voice:preview`, `voice:select`, `voice:build`. Préparer trois fichiers d’essai sous `.data/piller-voice/` avec identifiants sans clé.
 
-- [ ] Écrire puis exécuter les tests de cache, plafond, erreur incertaine, contrats HTTP et reprise ; constater les échecs.
-- [ ] Implémenter fournisseur, sauvegarde atomique, cache et simulation ; manifeste inactif initial.
-- [ ] Exécuter les tests ciblés et enregistrer le lot.
+- [x] Écrire puis exécuter les tests de cache, plafond, erreur incertaine, contrats HTTP et reprise ; constater les échecs.
+- [x] Implémenter fournisseur, sauvegarde atomique, cache et simulation ; manifeste inactif initial.
+- [x] Exécuter les tests ciblés et enregistrer le lot.
 
 ## Task 2 — Lecture et export des répliques
 
@@ -43,15 +43,15 @@
 
 **Interfaces:** résolution du manifeste avec empreinte exacte du texte ; lecteur annulable ; export JSON de répliques `id/text/enabled`, sans données de membres.
 
-- [ ] Ajouter les tests de correspondance, export, MP3/muet/arrêt/absence d’enregistrement ; observer les échecs.
-- [ ] Intégrer lecture existante et dédiée, sans dégrader les transactions ; exporter depuis le répertoire admin.
-- [ ] Exécuter les tests ciblés puis enregistrer le lot.
+- [x] Ajouter les tests de correspondance, export, MP3/muet/arrêt/absence d’enregistrement ; observer les échecs.
+- [x] Intégrer lecture existante et dédiée, sans dégrader les transactions ; exporter depuis le répertoire admin.
+- [x] Exécuter les tests ciblés puis enregistrer le lot.
 
 ## Task 3 — Vérification, essais réels et guide
 
 **Files:** `docs/piller-voice.md`, README, preuves sous `.impeccable/review/piller-voice/`.
 
-- [ ] Vérifier tests, TypeScript et build, puis revue indépendante des changements.
-- [ ] Documenter compte/clé locale, simulation, essais, sélection, export/génération, régénération après édition et redéploiement des seuls actifs préparés.
+- [x] Vérifier tests, TypeScript et build, puis revue indépendante des changements.
+- [x] Documenter compte/clé locale, simulation, essais, sélection, export/génération, régénération après édition et redéploiement des seuls actifs préparés.
 - [ ] Quand la clé existe, produire les trois vrais essais et les présenter ; attendre le choix de voix avant la banque complète.
-- [ ] Ne pas annoncer la voix grave active avant génération et vérification des vrais fichiers.
+- [x] Ne pas annoncer la voix grave active avant génération et vérification des vrais fichiers.
