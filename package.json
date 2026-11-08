@@ -15,7 +15,10 @@
     "db:restore": "tsx scripts/restore.ts",
     "db:backup": "tsx scripts/backup.ts",
     "test:e2e": "playwright test",
-    "qa:visual": "tsx scripts/qa-visual.ts"
+    "qa:visual": "tsx scripts/qa-visual.ts",
+    "voice:preview": "tsx scripts/voice.ts preview",
+    "voice:select": "tsx scripts/voice.ts select",
+    "voice:build": "tsx scripts/voice.ts build"
   },
   "engines": {
     "node": ">=22.0.0"
