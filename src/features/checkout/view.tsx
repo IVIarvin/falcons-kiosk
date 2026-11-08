@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Minus, Check, ArrowRight, ShoppingBag, RefreshCw } from 'lucide-react';
+import { Plus, Minus, Check, ArrowRight, ShoppingBag, RefreshCw, Search } from 'lucide-react';
 import { useApp } from '@/components/context';
 import { Empty, Busy, PageTitle } from '@/components/ui';
 import { formatCHF } from '@/lib/money';
@@ -9,9 +9,13 @@ import { ApiError, durableAction, pendingAction } from '@/lib/client';
 import type { CheckoutReceipt } from '@/lib/types';
 import { PillerComment } from '@/features/piller/panel';
 import { ProductImage, ProductAttribution } from '@/features/catalog/image';
+import { matchesProductSearch } from '@/features/catalog/browse';
+import { productCategories } from '@/features/catalog/categories';
+import styles from './browse.module.css';
 export function KioskView() {
   const { state, refresh, notice } = useApp();
   const [category, setCategory] = useState('Tout');
+  const [search, setSearch] = useState('');
   const [cart, setCart] = useState<Record<string, number>>(() => {
     try {
       return JSON.parse(sessionStorage.getItem(`falcons_cart_${state.user.id}`) ?? '{}');
@@ -79,33 +83,50 @@ export function KioskView() {
       gate.current = false;
     }
   }
-  const categories = ['Tout', ...new Set(products.map((p) => p.category))];
+  const categories = [
+    { label: 'Tout', shortLabel: 'Tout' },
+    ...productCategories.filter((c) => products.some((p) => p.category === c.label)),
+  ];
+  const visible = products.filter(
+    (p) => (category === 'Tout' || p.category === category) && matchesProductSearch(p, search),
+  );
+  const photoCredits = visible.filter((p) => p.image && p.details.source?.image === p.image);
   return (
     <>
-      <PageTitle title="Kiosque">
-        <span className="section-tag">Éclaireurs · Falcons</span>
-      </PageTitle>
+      <PageTitle title="Kiosque" />
       <Link className="balance-strip" href="/ardoise">
         <ShoppingBag size={23} />
         <span>Mon ardoise</span>
         <strong>{formatCHF(state.ledger.balanceCents)}</strong>
         <ArrowRight size={20} />
       </Link>
-      <div className="category-tabs" role="group" aria-label="Catégories">
+      <div className={`search-field ${styles.search}`}>
+        <Search size={19} aria-hidden="true" />
+        <input
+          type="search"
+          inputMode="search"
+          aria-label="Rechercher un produit"
+          placeholder="Coca, chips…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+      <div className={`category-tabs ${styles.filters}`} role="group" aria-label="Catégories">
         {categories.map((c) => (
           <button
-            key={c}
-            className={c === category ? 'selected' : ''}
-            onClick={() => setCategory(c)}
-            aria-pressed={c === category}
+            key={c.label}
+            className={c.label === category ? 'selected' : ''}
+            onClick={() => setCategory(c.label)}
+            aria-pressed={c.label === category}
+            aria-label={c.label}
           >
-            {c}
+            {c.shortLabel}
           </button>
         ))}
       </div>
       {pending && (
         <div className="notice-box">
-          <p>Un achat attend sa confirmation. Vérifie-le avant de reprendre.</p>
+          <p>Un achat attend confirmation.</p>
           <button
             className="button secondary"
             disabled={working}
@@ -119,54 +140,74 @@ export function KioskView() {
         <Empty title="Le kiosque se prépare.">
           Le responsable ajoutera bientôt les premiers produits.
         </Empty>
+      ) : !visible.length ? (
+        <Empty title="Aucun produit trouvé.">
+          <button
+            className="text-button"
+            onClick={() => {
+              setSearch('');
+              setCategory('Tout');
+            }}
+          >
+            Tout afficher
+          </button>
+        </Empty>
       ) : (
         <div className="product-grid">
-          {products
-            .filter((p) => category === 'Tout' || p.category === category)
-            .map((p) => (
-              <article key={p.id} className="product-card">
-                <div className="product-image">
-                  <ProductImage src={p.image} name={p.name} />
-                </div>
-                <ProductAttribution image={p.image} details={p.details} />
-                <h2>{p.name}</h2>
-                <span className="product-unit">{p.unit === 'pièce' ? '' : p.unit}</span>
-                <div className="product-footer">
-                  <strong>{formatCHF(p.price_cents)}</strong>
-                  {cart[p.id] > 0 ? (
-                    <div className="quantity">
-                      <button
-                        className="icon-button"
-                        disabled={working || pending}
-                        aria-label={`Retirer un ${p.name}`}
-                        onClick={() => quantity(p.id, -1)}
-                      >
-                        <Minus size={17} />
-                      </button>
-                      <output aria-label={`Quantité ${p.name}`}>{cart[p.id]}</output>
-                      <button
-                        className="icon-button"
-                        disabled={working || pending}
-                        aria-label={`Ajouter un ${p.name}`}
-                        onClick={() => quantity(p.id, 1)}
-                      >
-                        <Plus size={17} />
-                      </button>
-                    </div>
-                  ) : (
+          {visible.map((p) => (
+            <article key={p.id} className="product-card">
+              <div className="product-image">
+                <ProductImage src={p.image} name={p.name} />
+              </div>
+              <h2>{p.name}</h2>
+              <span className="product-unit">{p.unit === 'pièce' ? '' : p.unit}</span>
+              <div className="product-footer">
+                <strong>{formatCHF(p.price_cents)}</strong>
+                {cart[p.id] > 0 ? (
+                  <div className="quantity">
                     <button
-                      className="add-button"
+                      className="icon-button"
                       disabled={working || pending}
-                      onClick={() => quantity(p.id, 1)}
-                      aria-label={`Ajouter ${p.name}`}
+                      aria-label={`Retirer un ${p.name}`}
+                      onClick={() => quantity(p.id, -1)}
                     >
-                      <Plus size={22} />
+                      <Minus size={17} />
                     </button>
-                  )}
-                </div>
-              </article>
-            ))}
+                    <output aria-label={`Quantité ${p.name}`}>{cart[p.id]}</output>
+                    <button
+                      className="icon-button"
+                      disabled={working || pending}
+                      aria-label={`Ajouter un ${p.name}`}
+                      onClick={() => quantity(p.id, 1)}
+                    >
+                      <Plus size={17} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="add-button"
+                    disabled={working || pending}
+                    onClick={() => quantity(p.id, 1)}
+                    aria-label={`Ajouter ${p.name}`}
+                  >
+                    <Plus size={22} />
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
         </div>
+      )}
+      {photoCredits.length > 0 && (
+        <details className={styles.credits}>
+          <summary>Crédits photos</summary>
+          {photoCredits.map((p) => (
+            <div key={p.id}>
+              <strong>{p.name}</strong>
+              <ProductAttribution image={p.image} details={p.details} />
+            </div>
+          ))}
+        </details>
       )}
       {receipt ? (
         <section className="receipt-panel" ref={receiptRef} aria-live="polite">

@@ -8,13 +8,20 @@ import { centsFromInput, costMicrosFromInput, formatCHF } from '@/lib/money';
 import type { Product } from '@/lib/types';
 import {
   characteristicLabels,
+  kindLabels,
   emptyDetails,
   productSourceUrl,
   type ProductDetails,
   type ProductSuggestion,
 } from './details';
 import { ProductAttribution, ProductImage } from './image';
-import { categoryForProduct, productCategories } from './categories';
+import styles from './editor.module.css';
+import {
+  categoryForProduct,
+  classifyDetails,
+  productCategories,
+  unclassifiedCategory,
+} from './categories';
 
 export function ProductEditor({
   product: p,
@@ -27,7 +34,9 @@ export function ProductEditor({
   const [name, setName] = useState(p?.name ?? '');
   const [unit, setUnit] = useState(p?.unit ?? 'pièce');
   const [category, setCategory] = useState(
-    p ? categoryForProduct(p.category, p.details.kind, p.is_beverage) : 'Autres boissons',
+    p && p.category !== unclassifiedCategory
+      ? categoryForProduct(p.category, p.details, p.is_beverage)
+      : '',
   );
   const [image, setImage] = useState(p?.image ?? '');
   const [price, setPrice] = useState(p ? (p.price_cents / 100).toFixed(2) : '');
@@ -74,11 +83,12 @@ export function ProductEditor({
       if (request.current !== id) return;
       setName(found.name);
       setUnit(found.unit || 'pièce');
-      setCategory(categoryForProduct(found.category, found.details.kind, found.is_beverage));
+      const family = categoryForProduct(found.category, found.details, found.is_beverage);
+      setCategory(family === unclassifiedCategory ? '' : family);
       setImage(found.image);
       setDetails(found.details);
       setResults(null);
-      setMessage('Référence récupérée. Vérifie la variante, la catégorie et les caractéristiques.');
+      setMessage('Référence ajoutée. Vérifie la variante.');
     } catch (e) {
       if (request.current === id) setError((e as Error).message);
     } finally {
@@ -95,9 +105,9 @@ export function ProductEditor({
         name,
         unit,
         category,
-        is_beverage: classification.beverage,
+        is_beverage: classification!.beverage,
         image,
-        details: { ...details, kind: classification.kind },
+        details: classifyDetails(category, details),
         price_cents: centsFromInput(price),
         price_mode: priceMode,
         cost_micros: cost ? costMicrosFromInput(cost) : null,
@@ -119,7 +129,7 @@ export function ProductEditor({
     }));
   }
   const locked = busy || selecting;
-  const classification = productCategories.find((c) => c.label === category)!;
+  const classification = productCategories.find((c) => c.label === category);
   const priceNumber = Number(price.replace(',', '.'));
   const costNumber = Number(cost.replace(',', '.'));
   const validDelta =
@@ -137,10 +147,7 @@ export function ProductEditor({
       }}
     >
       <form onSubmit={save}>
-        <Field
-          label="Nom"
-          hint="Saisis un nom libre ou un code-barres pour rechercher une référence."
-        >
+        <Field label="Nom">
           <input
             aria-label="Nom"
             name="name"
@@ -174,7 +181,6 @@ export function ProductEditor({
               </>
             )}
           </button>
-          <span>La saisie libre reste disponible.</span>
         </div>
         {error && (
           <p className="form-error" role="alert">
@@ -257,25 +263,26 @@ export function ProductEditor({
             <select
               aria-label="Catégorie"
               name="category"
+              required
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setDetails((old) => classifyDetails(e.target.value, old));
+              }}
             >
+              <option value="" disabled>
+                Choisir une catégorie
+              </option>
               {productCategories.map((c) => (
                 <option key={c.label}>{c.label}</option>
               ))}
             </select>
           </Field>
-          <p className="muted product-classification">
-            {classification.beverage ? 'Boisson' : 'Aliment ou autre article'} · type déterminé par
-            la catégorie.
-          </p>
           <section className="product-pricing" aria-label="Achat et vente">
-            <h3>Achat et vente</h3>
-            <p>Les montants ci-dessous concernent un seul article.</p>
             <div className="form-grid">
               <Field
                 label="Prix d’achat par article (CHF)"
-                hint="Ce que le kiosque paie. Les ravitaillements mettront ce montant à jour."
+                hint="Facultatif si le prix d’achat est inconnu."
               >
                 <input
                   name="cost"
@@ -285,10 +292,7 @@ export function ProductEditor({
                   required={priceMode === 'auto'}
                 />
               </Field>
-              <Field
-                label="Prix de vente au kiosque (CHF)"
-                hint="Ce que le membre paie pour cet article."
-              >
+              <Field label="Prix de vente au kiosque (CHF)">
                 <input
                   name="price"
                   inputMode="decimal"
@@ -299,7 +303,7 @@ export function ProductEditor({
               </Field>
             </div>
             <div className="price-delta" role="status" aria-label="Écart par article">
-              <span>Écart vente − achat</span>
+              <span>Marge par article</span>
               <strong className={validDelta && priceNumber < costNumber ? 'danger-text' : ''}>
                 {validDelta
                   ? formatCHF(Math.round((priceNumber - costNumber) * 100))
@@ -307,10 +311,13 @@ export function ProductEditor({
               </strong>
               <small>
                 {validDelta
-                  ? 'Marge brute estimée par article, avant les autres dépenses.'
-                  : 'Renseigne les deux prix pour voir la marge par article.'}
+                  ? 'Estimation hors autres dépenses.'
+                  : 'Ajoute le prix d’achat pour calculer la marge.'}
               </small>
             </div>
+          </section>
+          <details className={styles.options}>
+            <summary>Options du produit</summary>
             <Field label="Mode de prix">
               <select
                 name="price_mode"
@@ -322,87 +329,100 @@ export function ProductEditor({
               </select>
             </Field>
             {priceMode === 'auto' && (
-              <p className="muted">
-                Les prochains prix seront proposés selon la majoration des réglages. Tu devras les
-                confirmer avant publication.
-              </p>
+              <p className="muted">Les nouveaux prix restent à valider avant publication.</p>
             )}
-            <p className="muted">
-              Pour comptabiliser un ravitaillement, utilise « Achats » : nombre d’articles et total
-              payé.
-            </p>
-          </section>
-          <section className="product-characteristics" aria-label="Caractéristiques du produit">
-            <h3>Caractéristiques</h3>
-            <p>Vérifie ces informations sur l’emballage. Piller s’en sert pour ses répliques.</p>
-            <div className="form-grid">
-              {(
-                [
-                  ['sugar', 'Contient du sucre'],
-                  ['alcohol', 'Contient de l’alcool'],
-                  ['caffeine', 'Contient de la caféine'],
-                ] as const
-              ).map(([key, label]) => (
-                <Field key={key} label={label}>
-                  <select
-                    value={details[key]}
-                    onChange={(e) => characteristic(key, e.target.value)}
-                  >
-                    {Object.entries(characteristicLabels).map(([value, label]) => (
+            <section className="product-characteristics" aria-label="Caractéristiques du produit">
+              <h3>Caractéristiques</h3>
+              <Field label="Type précis pour Piller">
+                <select
+                  value={details.kind}
+                  onChange={(e) =>
+                    setDetails((old) => ({
+                      ...old,
+                      kind: e.target.value as ProductDetails['kind'],
+                    }))
+                  }
+                >
+                  {Object.entries(kindLabels)
+                    .filter(
+                      ([kind]) =>
+                        !classification ||
+                        (classification.beverage
+                          ? kind !== 'snack'
+                          : ['snack', 'unknown', 'other'].includes(kind)),
+                    )
+                    .map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
                     ))}
-                  </select>
-                </Field>
-              ))}
-            </div>
-            {(details.sugarsPer100 !== null || details.alcoholPercent !== null) && (
-              <p className="lookup-source">
-                Données importées :{' '}
-                {details.sugarsPer100 !== null
-                  ? `sucres ${details.sugarsPer100} g / 100 g ou 100 ml`
-                  : ''}
-                {details.sugarsPer100 !== null && details.alcoholPercent !== null ? ' · ' : ''}
-                {details.alcoholPercent !== null ? `alcool ${details.alcoholPercent} %` : ''}.
-              </p>
+                </select>
+              </Field>
+              <div className="form-grid">
+                {(
+                  [
+                    ['sugar', 'Contient du sucre'],
+                    ['alcohol', 'Contient de l’alcool'],
+                    ['caffeine', 'Contient de la caféine'],
+                  ] as const
+                )
+                  .filter(([key]) => key !== 'alcohol' || !classification?.beverage)
+                  .map(([key, label]) => (
+                    <Field key={key} label={label}>
+                      <select
+                        value={details[key]}
+                        onChange={(e) => characteristic(key, e.target.value)}
+                      >
+                        {Object.entries(characteristicLabels).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  ))}
+              </div>
+              {(details.sugarsPer100 !== null || details.alcoholPercent !== null) && (
+                <p className="lookup-source">
+                  Données importées :{' '}
+                  {details.sugarsPer100 !== null
+                    ? `sucres ${details.sugarsPer100} g / 100 g ou 100 ml`
+                    : ''}
+                  {details.sugarsPer100 !== null && details.alcoholPercent !== null ? ' · ' : ''}
+                  {details.alcoholPercent !== null ? `alcool ${details.alcoholPercent} %` : ''}.
+                </p>
+              )}
+              {details.source && (
+                <p className="lookup-source">
+                  Référence :{' '}
+                  <a href={productSourceUrl(details.source.code)} target="_blank" rel="noreferrer">
+                    Open Food Facts · {details.source.code}
+                  </a>
+                </p>
+              )}
+            </section>
+            <Field label="Image du produit" hint="Facultatif : adresse HTTPS.">
+              <input
+                aria-label="Image du produit"
+                name="image"
+                value={image}
+                onChange={(e) => setImage(e.target.value)}
+                maxLength={1000}
+              />
+            </Field>
+            {!details.source && (
+              <div className="product-preview">
+                <span className="preview-image">
+                  <ProductImage src={image} name={name || 'Aperçu du produit'} />
+                </span>
+                <div>
+                  <strong>{name || 'Aperçu du produit'}</strong>
+                  <p>{image ? 'Aperçu' : 'Pictogramme par défaut.'}</p>
+                  <ProductAttribution image={image} details={details} />
+                </div>
+              </div>
             )}
-            {details.source && (
-              <p className="lookup-source">
-                Référence :{' '}
-                <a href={productSourceUrl(details.source.code)} target="_blank" rel="noreferrer">
-                  Open Food Facts · {details.source.code}
-                </a>
-                . Les champs restent modifiables.
-              </p>
-            )}
-          </section>
-          <Field
-            label="Image du produit"
-            hint="Adresse HTTPS ou image locale /products/… ; laisse vide pour utiliser le pictogramme."
-          >
-            <input
-              aria-label="Image du produit"
-              name="image"
-              value={image}
-              onChange={(e) => setImage(e.target.value)}
-              maxLength={1000}
-            />
-          </Field>
-          <div className="product-preview">
-            <span className="preview-image">
-              <ProductImage src={image} name={name || 'Aperçu du produit'} />
-            </span>
-            <div>
-              <strong>{name || 'Aperçu du produit'}</strong>
-              <p>
-                {image
-                  ? 'Vérifie la photo et la variante.'
-                  : 'Ajoute une adresse d’image ou garde le pictogramme.'}
-              </p>
-              <ProductAttribution image={image} details={details} />
-            </div>
-          </div>
+          </details>
           <div className="checkboxes">
             <label>
               <input name="active" type="checkbox" defaultChecked={p?.active ?? true} /> Visible

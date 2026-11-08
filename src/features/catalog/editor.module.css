@@ -1,0 +1,16 @@
+.options {
+  margin-bottom: 24px;
+  border-block: 1px solid var(--line);
+}
+.options > summary {
+  cursor: pointer;
+  padding-block: 16px;
+  font-weight: 600;
+}
+.options[open] > summary {
+  margin-bottom: 12px;
+}
+.options section {
+  border-top: 0;
+  padding-top: 0;
+}

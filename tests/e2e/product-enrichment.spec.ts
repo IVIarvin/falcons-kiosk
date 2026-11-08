@@ -49,10 +49,11 @@ test('importe une référence illustrée, corrige les caractéristiques et conse
   await dialog.getByRole('button', { name: 'Rechercher une référence' }).click();
   await dialog.getByRole('button', { name: /Choisir Coca-Cola Original QA/ }).click();
   await expect(dialog.getByLabel('Nom', { exact: true })).toHaveValue(suggestion.name);
-  await expect(dialog.getByLabel('Catégorie', { exact: true })).toHaveValue('Sodas');
+  await expect(dialog.getByLabel('Catégorie', { exact: true })).toHaveValue('Boissons sans alcool');
   await expect(dialog.getByLabel('Prix de vente au kiosque (CHF)', { exact: false })).toHaveValue(
     '2.50',
   );
+  await dialog.getByText('Options du produit', { exact: true }).click();
   await expect(dialog.getByLabel('Contient du sucre')).toHaveValue('present');
   await dialog.getByLabel('Contient de la caféine').selectOption('present');
   await expect(dialog.getByRole('link', { name: /Open Food Facts/ }).first()).toBeVisible();
@@ -67,6 +68,7 @@ test('importe une référence illustrée, corrige les caractéristiques et conse
     .getByRole('button', { name: `Modifier ${suggestion.name}`, exact: true })
     .last()
     .click();
+  await page.getByRole('dialog').getByText('Options du produit', { exact: true }).click();
   await expect(page.getByLabel('Contient de la caféine')).toHaveValue('present');
   await page.getByRole('button', { name: 'Fermer', exact: true }).click();
 });
@@ -92,6 +94,8 @@ test('la panne de recherche permet la création libre et une photo cassée affic
   await dialog.getByRole('button', { name: 'Rechercher une référence' }).click();
   await expect(dialog.getByRole('alert')).toContainText('saisie libre');
   await dialog.getByLabel('Prix de vente au kiosque (CHF)', { exact: false }).fill('1.00');
+  await dialog.getByLabel('Catégorie', { exact: true }).selectOption('Snacks sucrés');
+  await dialog.getByText('Options du produit', { exact: true }).click();
   await dialog
     .getByLabel('Image du produit', { exact: true })
     .fill('/products/photo-inexistante.png');

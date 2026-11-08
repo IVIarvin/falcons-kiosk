@@ -13,6 +13,8 @@ test('crée un produit automatique, enregistre un achat et publie les prix sépa
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox', { name: /^Nom\b/ }).fill(name);
   await dialog.getByLabel('Prix de vente au kiosque (CHF)', { exact: false }).fill('1.00');
+  await dialog.getByLabel('Catégorie', { exact: true }).selectOption('Boissons sans alcool');
+  await dialog.getByText('Options du produit', { exact: true }).click();
   await dialog.getByLabel('Mode de prix').selectOption('auto');
   await dialog.getByLabel('Prix d’achat par article (CHF)', { exact: false }).fill('1.000000');
   await dialog.getByRole('button', { name: 'Enregistrer le produit' }).click();
@@ -43,6 +45,9 @@ test('crée un produit automatique, enregistre un achat et publie les prix sépa
   await row.getByRole('button', { name: `Modifier ${name}` }).click();
   await page.getByLabel('Visible dans le catalogue').uncheck();
   await page.getByRole('button', { name: 'Enregistrer le produit' }).click();
+  await page
+    .getByRole('combobox', { name: 'État des produits', exact: true })
+    .selectOption('inactive');
   await expect(row).toContainText('Désactivé');
   await page.goto('/');
   await expect(page.locator('.product-card').filter({ hasText: name })).toHaveCount(0);

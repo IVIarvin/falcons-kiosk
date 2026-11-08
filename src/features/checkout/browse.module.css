@@ -1,0 +1,34 @@
+.search {
+  margin-bottom: 12px;
+}
+.filters {
+  margin-top: 0;
+}
+.filters button {
+  min-height: 44px;
+}
+.credits {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.credits summary {
+  cursor: pointer;
+  width: fit-content;
+  padding-block: 10px;
+}
+.credits > div {
+  margin-top: 12px;
+}
+.credits strong {
+  font-weight: 500;
+}
+@media (max-width: 760px) {
+  .filters {
+    gap: 6px;
+  }
+  .filters button {
+    font-size: 13px;
+    padding-inline: 11px;
+  }
+}

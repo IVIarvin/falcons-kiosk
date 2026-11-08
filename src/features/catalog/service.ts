@@ -6,7 +6,7 @@ import { assert } from '@/lib/errors';
 import { priceFromCost } from '@/lib/money';
 import { requireAdmin, type Member } from '@/features/auth/service';
 import { detailsSchema } from './details';
-import { productCategories } from './categories';
+import { categoryForProduct, classifyDetails, legacyKinds, productCategories } from './categories';
 import { requestHash } from '@/features/ledger/service';
 
 const productSchema = z.object({
@@ -24,10 +24,12 @@ const productSchema = z.object({
   details: detailsSchema.optional(),
 });
 function mapProduct(row: Product): Product {
+  const details = classifyDetails(row.category, detailsSchema.parse(row.details ?? {}));
   return {
     ...row,
     available: true,
-    details: detailsSchema.parse(row.details ?? {}),
+    details,
+    category: categoryForProduct(row.category, details, row.is_beverage),
     cost_micros: row.cost_micros === null ? null : Number(row.cost_micros),
   };
 }
@@ -43,17 +45,21 @@ export async function saveProduct(db: Database, actor: Member, input: unknown): 
   requireAdmin(actor);
   const p = productSchema.parse(input);
   const classification = productCategories.find((c) => c.label === p.category);
-  if (classification) {
-    p.is_beverage = classification.beverage;
-    const [existing] =
-      p.id && !p.details
-        ? await db.query<{ details: unknown }>('SELECT details FROM products WHERE id=$1', [p.id])
-        : [];
-    p.details = {
-      ...detailsSchema.parse(p.details ?? existing?.details ?? {}),
-      kind: classification.kind,
-    };
-  } else if (p.category === 'Boissons') p.is_beverage = true;
+  const [existing] =
+    p.id && !p.details
+      ? await db.query<{ details: unknown }>('SELECT details FROM products WHERE id=$1', [p.id])
+      : [];
+  p.details = classifyDetails(
+    p.category,
+    detailsSchema.parse(p.details ?? existing?.details ?? {}),
+  );
+  if (classification) p.is_beverage = classification.beverage;
+  else if (legacyKinds[p.category] === 'snack') p.is_beverage = false;
+  else if (
+    p.category === 'Boissons' ||
+    (legacyKinds[p.category] && legacyKinds[p.category] !== 'snack')
+  )
+    p.is_beverage = true;
   p.available = true;
   assert(
     !p.image || p.image.startsWith('/products/') || /^https:\/\//.test(p.image),

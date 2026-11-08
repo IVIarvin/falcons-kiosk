@@ -3,6 +3,7 @@ import type { Database } from '@/lib/db';
 import { DomainError } from '@/lib/errors';
 import { requireAdmin, type Member } from '@/features/auth/service';
 import { emptyDetails, type ProductSuggestion, type ProductDetails } from './details';
+import { categoryForProduct } from './categories';
 
 const fields =
   'code,product_name,product_name_fr,product_name_en,brands,quantity,categories_tags,labels_tags,nutriments,image_front_url,images,lang';
@@ -108,7 +109,17 @@ export function normalizeProduct(value: unknown): ProductSuggestion | null {
   details.source = { code, image };
   const isBeverage =
     has('beverages', 'non-alcoholic-beverages', 'alcoholic-beverages') ||
-    ['water', 'soda', 'energy', 'beer', 'wine', 'spirits'].includes(details.kind);
+    ['water', 'soda', 'energy', 'coffee', 'tea', 'beer', 'wine', 'spirits'].includes(details.kind);
+  const category =
+    details.kind === 'snack'
+      ? has('salty-snacks', 'chips', 'crisps', 'salted-biscuits', 'crackers')
+        ? 'Snacks salés'
+        : has('sweet-snacks', 'chocolates', 'biscuits', 'candies', 'confectioneries')
+          ? 'Snacks sucrés'
+          : 'Snacks'
+      : isBeverage
+        ? 'Boissons'
+        : 'Autres';
   return {
     code,
     name: name.slice(0, 90),
@@ -117,7 +128,7 @@ export function normalizeProduct(value: unknown): ProductSuggestion | null {
       120,
     ),
     unit: string(raw.quantity).slice(0, 40),
-    category: details.kind === 'snack' ? 'Snacks' : isBeverage ? 'Boissons' : 'Autres',
+    category: categoryForProduct(category, details, isBeverage),
     is_beverage: isBeverage,
     image,
     details,
@@ -218,14 +229,21 @@ export async function searchProducts(
     langs: 'fr,en',
     fields,
   }).toString();
-  return cached(db, `search:${query.toLocaleLowerCase('fr')}`, 'search', url, fetcher, (data) => {
-    const raw = object(data);
-    if (!Array.isArray(raw.hits) || raw.timed_out === true) throw unavailable();
-    return raw.hits
-      .slice(0, 8)
-      .map(normalizeProduct)
-      .filter((p): p is ProductSuggestion => p !== null);
-  });
+  return cached(
+    db,
+    `v2:search:${query.toLocaleLowerCase('fr')}`,
+    'search',
+    url,
+    fetcher,
+    (data) => {
+      const raw = object(data);
+      if (!Array.isArray(raw.hits) || raw.timed_out === true) throw unavailable();
+      return raw.hits
+        .slice(0, 8)
+        .map(normalizeProduct)
+        .filter((p): p is ProductSuggestion => p !== null);
+    },
+  );
 }
 export async function lookupProduct(
   db: Database,
@@ -237,7 +255,7 @@ export async function lookupProduct(
   const { code } = z.object({ code: z.string().regex(/^\d{8,14}$/) }).parse(input);
   const url = new URL(`https://world.openfoodfacts.org/api/v2/product/${code}.json`);
   url.searchParams.set('fields', fields);
-  return cached(db, `product:${code}`, 'product', url, fetcher, (data) => {
+  return cached(db, `v2:product:${code}`, 'product', url, fetcher, (data) => {
     const raw = object(data);
     if (raw.status === 0)
       throw new DomainError(

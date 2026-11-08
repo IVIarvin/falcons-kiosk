@@ -31,7 +31,6 @@ export function ProfileView() {
       <div className="profile-layout">
         <section className="form-panel">
           <h2>Mes coordonnées</h2>
-          <p>Ton numéro permet au responsable de te demander un règlement TWINT.</p>
           <form onSubmit={profile}>
             <div className="form-grid">
               <Field label="Grade">

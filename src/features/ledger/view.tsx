@@ -164,10 +164,7 @@ export function ArdoiseView() {
   const due = state.ledger.balanceCents;
   return (
     <>
-      <PageTitle
-        title="Mon ardoise"
-        subtitle="Chaque consommation et chaque règlement, au même endroit."
-      />
+      <PageTitle title="Mon ardoise" />
       <div className="account-balance">
         <span>{due < 0 ? 'Ton avoir disponible' : 'Ton solde à régler'}</span>
         <strong>{formatCHF(Math.abs(due))}</strong>
@@ -176,17 +173,14 @@ export function ArdoiseView() {
             ? 'Cet avoir sera déduit de tes prochains achats.'
             : due === 0
               ? 'Ton ardoise est à jour.'
-              : 'Règle auprès du responsable, qui confirmera la réception dans l’application.'}
+              : 'Règle auprès d’un admin.'}
         </p>
       </div>
       <h2 className="section-heading">Historique</h2>
-      <p className="muted">
-        Un article non pris ? Tu peux le retirer pendant 10 minutes après l’ajout. Ensuite, demande
-        une correction à un administrateur.
-      </p>
+      <p className="muted">Retrait possible pendant 10 min. Ensuite, contacte un admin.</p>
       {pending && (
         <div className="notice-box">
-          <p>Un retrait attend confirmation. Vérifie-le avant d’en faire un autre.</p>
+          <p>Un retrait attend confirmation.</p>
           <button className="button secondary" disabled={working} onClick={() => void remove(true)}>
             Retrouver le retrait
           </button>
@@ -216,10 +210,7 @@ export function ArdoiseView() {
           <p>
             <strong>T’es sûr ? Si tu mens, on te retrouvera.</strong>
           </p>
-          <p className="muted">
-            Retire uniquement ce que tu n’as pas pris. Ton solde sera réduit et la correction
-            restera visible.
-          </p>
+          <p className="muted">Article non pris uniquement. Le retrait reste dans l’historique.</p>
           <form
             onSubmit={(e) => {
               e.preventDefault();

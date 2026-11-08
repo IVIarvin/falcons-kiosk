@@ -2,6 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { normalizeProduct } from '@/features/catalog/lookup';
 
 describe('normalisation des références Open Food Facts', () => {
+  it('classe les snacks depuis la taxonomie, pas depuis leur sucre', () => {
+    const chips = normalizeProduct({
+      code: '12345678',
+      product_name: 'Chips',
+      categories_tags: ['en:salty-snacks', 'en:chips'],
+      nutriments: { sugars_100g: 2 },
+    });
+    const biscuit = normalizeProduct({
+      code: '12345679',
+      product_name: 'Biscuit',
+      categories_tags: ['en:sweet-snacks', 'en:biscuits'],
+      nutriments: {},
+    });
+    expect(chips?.category).toBe('Snacks salés');
+    expect(biscuit?.category).toBe('Snacks sucrés');
+  });
   it('ne classe pas automatiquement comme alcoolisée une référence explicitement sans alcool à teneur résiduelle', () => {
     const beer = normalizeProduct({
       code: '12345678',

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PDFName, PDFDict } from 'pdf-lib';
 import { buildCatalogPdf, buildAccessPdf, toCsv } from '@/features/documents/service';
 it('produit un catalogue A4 paginé avec caractères français', async () => {
   const pdf = await buildCatalogPdf(
@@ -14,6 +14,19 @@ it('produit un catalogue A4 paginé avec caractères français', async () => {
   const doc = await PDFDocument.load(pdf);
   expect(doc.getPageCount()).toBeGreaterThan(1);
   expect(doc.getPage(0).getSize().width).toBeCloseTo(595.28, 0);
+  const fonts = doc.getPage(0).node.Resources()!.lookup(PDFName.of('Font'), PDFDict);
+  expect(
+    fonts
+      .keys()
+      .map((k) => k.asString())
+      .join(' '),
+  ).toMatch(/Rajdhani/);
+  expect(
+    fonts
+      .keys()
+      .map((k) => k.asString())
+      .join(' '),
+  ).toMatch(/Barlow/);
 });
 it('refuse une fausse URL et crée une affiche QR à partir de l’adresse HTTPS', async () => {
   await expect(buildAccessPdf('')).rejects.toThrow(/adresse|URL/);

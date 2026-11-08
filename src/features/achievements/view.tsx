@@ -17,10 +17,7 @@ export function CrewView() {
   )[0];
   return (
     <>
-      <PageTitle
-        title="Famille Falcons"
-        subtitle="Les succès de la section. Une famille, un kiosque."
-      />
+      <PageTitle title="Famille Falcons" />
       <div className="crew-heading">
         <Trophy size={34} />
         <div>
@@ -60,9 +57,7 @@ export function CrewView() {
         )}
       </div>
       <p className="muted small">
-        {mode === 'drinks'
-          ? 'Classement par unités de boissons, après corrections.'
-          : 'Classement selon les achats enregistrés, indépendamment des paiements.'}
+        {mode === 'drinks' ? 'Par nombre de boissons.' : 'Par montant acheté, pas par paiement.'}
       </p>
       <section className="crew-personal" aria-label="Ta place dans la section">
         <div className="crew-position">

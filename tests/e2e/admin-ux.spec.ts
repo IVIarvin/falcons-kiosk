@@ -35,7 +35,7 @@ test('administration mobile et formulaire produit compréhensible', async ({ pag
   await expect(dialog.getByLabel('Unité de vente')).toHaveCount(0);
   await expect(dialog.getByLabel('C’est une boisson')).toHaveCount(0);
   await expect(dialog.getByLabel('Disponible au kiosque')).toHaveCount(0);
-  await dialog.getByLabel('Catégorie', { exact: true }).selectOption('Snacks');
+  await dialog.getByLabel('Catégorie', { exact: true }).selectOption('Snacks salés');
   await dialog.getByLabel('Prix d’achat par article (CHF)', { exact: false }).fill('1.20');
   await dialog.getByLabel('Prix de vente au kiosque (CHF)', { exact: false }).fill('2.00');
   await expect(dialog.getByRole('status', { name: 'Écart par article' })).toContainText('CHF 0.80');

@@ -55,10 +55,10 @@ export function AuthForm({
         </h1>
         <p>
           {mode === 'register'
-            ? 'Ton compte, ton ardoise. Tu peux commencer dès l’inscription.'
+            ? 'Ton compte, ton ardoise.'
             : mode === 'reset'
-              ? 'Demande un code de récupération au responsable du kiosque.'
-              : 'Boissons, snacks et ravitaillement pour les Falcons.'}
+              ? 'Demande un code à un admin.'
+              : 'Choisis. Valide. Sers-toi.'}
         </p>
         <form onSubmit={submit}>
           {mode === 'register' && (

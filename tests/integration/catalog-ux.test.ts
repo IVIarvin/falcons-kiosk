@@ -31,6 +31,15 @@ it('déduit boisson et type de la catégorie sans saisie d’unité ni disponibi
     });
     const snack = await saveProduct(db, admin, { ...base, category: 'Snacks', is_beverage: true });
     expect(snack).toMatchObject({ is_beverage: false, details: { kind: 'snack' } });
+    const soda = await saveProduct(db, admin, {
+      ...base,
+      category: 'Boissons sans alcool',
+      details: { kind: 'soda', sugar: 'none' },
+    });
+    expect(soda).toMatchObject({
+      is_beverage: true,
+      details: { kind: 'soda', sugar: 'none', alcohol: 'none' },
+    });
     // Ancien drapeau de stock : il ne doit plus bloquer un produit du catalogue.
     await db.query('UPDATE products SET available=false WHERE id=$1', [beer.id]);
     expect((await getCatalog(db)).find((p) => p.id === beer.id)?.available).toBe(true);

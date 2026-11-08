@@ -116,7 +116,7 @@ function Settlements() {
   }
   return (
     <>
-      <PageTitle title="Règlements" subtitle="Confirme les paiements reçus.">
+      <PageTitle title="Règlements">
         <DownloadLink href={doc('catalogue')}>
           <FileText size={17} /> Catalogue PDF
         </DownloadLink>
@@ -354,7 +354,7 @@ function Products() {
   }
   return (
     <>
-      <PageTitle title="Produits" subtitle="Le catalogue et les prix du kiosque.">
+      <PageTitle title="Produits">
         <button className="button primary" onClick={() => setEditing('new')}>
           <Plus size={18} /> Ajouter un produit
         </button>
@@ -490,7 +490,7 @@ function PricePreview() {
           {changes.length} nouveau{changes.length > 1 ? 'x' : ''} prix proposé
           {changes.length > 1 ? 's' : ''}
         </strong>
-        <p>Les prix actuels restent en vigueur jusqu’à ta confirmation.</p>
+        <p>Les prix actuels restent en vigueur.</p>
       </div>
       <button className="button secondary" onClick={() => setOpen(true)}>
         Vérifier les prix
@@ -573,7 +573,7 @@ function Purchases() {
   }
   return (
     <>
-      <PageTitle title="Achats" subtitle="Les réapprovisionnements et leur coût réel.">
+      <PageTitle title="Achats">
         <button
           className="button primary"
           disabled={!state.products.length || working || !!pending}
@@ -589,7 +589,7 @@ function Purchases() {
       </PageTitle>
       {pending && (
         <div className="notice-box">
-          <p>Un achat attend confirmation. Retrouve-le avant de le ressaisir.</p>
+          <p>Un achat attend confirmation.</p>
           <button className="button secondary" disabled={working} onClick={() => void save()}>
             <RefreshCw size={16} /> Retrouver l’achat
           </button>
@@ -671,10 +671,7 @@ function Purchases() {
               </select>
             </Field>
             <div className="form-grid">
-              <Field
-                label="Nombre d’articles achetés"
-                hint="2 packs de 24 = 48 articles vendus séparément."
-              >
+              <Field label="Nombre d’articles achetés" hint="2 packs de 24 = 48 articles.">
                 <input
                   name="quantity"
                   type="number"
@@ -687,7 +684,7 @@ function Purchases() {
               </Field>
               <Field
                 label="Prix d’achat total payé (CHF)"
-                hint="Le montant payé au fournisseur pour tous les articles, pas le prix de vente."
+                hint="Payé au fournisseur pour le lot complet."
               >
                 <input
                   name="total"
@@ -715,9 +712,7 @@ function Purchases() {
                   <strong>{formatCHF(draftProduct.price_cents - paidPerArticle * 100)}</strong>
                 </>
               )}
-              <small>
-                Le prix de vente reste inchangé tant qu’un nouveau tarif n’a pas été confirmé.
-              </small>
+              <small>Nouveau tarif à valider séparément.</small>
             </div>
             <Field label="Date d’achat">
               <input
@@ -759,7 +754,7 @@ function Settings() {
   }
   return (
     <>
-      <PageTitle title="Réglages" subtitle="Les règles du kiosque et la voix de la section." />
+      <PageTitle title="Réglages" />
       <div className="admin-more-links">
         <Link className="button secondary" href="/admin/finance">
           Suivi financier <ArrowUpRight size={16} />
@@ -774,7 +769,7 @@ function Settings() {
           <form onSubmit={save}>
             <Field
               label="Majoration générale (%)"
-              hint="Coût d’achat + pourcentage, puis arrondi à CHF 0.05. Un prix manuel reste prioritaire."
+              hint="Achat + majoration, arrondi à CHF 0.05. Prix fixes inchangés."
             >
               <input
                 name="markup"
@@ -793,8 +788,7 @@ function Settings() {
               />
             </label>
             <p className="muted">
-              Une réplique écrite et la même phrase à voix haute après chaque panier confirmé. Le
-              son reste désactivable sur chaque téléphone.
+              Une réplique après l’achat. Son désactivable sur chaque téléphone.
             </p>
             <button className="button primary" disabled={busy}>
               {busy ? <Busy /> : 'Enregistrer les réglages'}
@@ -804,7 +798,7 @@ function Settings() {
         <section className="form-panel">
           <Users size={28} className="accent" />
           <h2>Membres et admins</h2>
-          <p>Ajoute ou retire un administrateur parmi les membres inscrits, et gère les accès.</p>
+          <p>Modifie les rôles et les accès des membres.</p>
           <Link className="button secondary" href="/admin/section">
             Gérer les membres <ArrowUpRight size={16} />
           </Link>
@@ -823,13 +817,13 @@ function Documents() {
   const { state } = useApp();
   return (
     <>
-      <PageTitle title="Documents" subtitle="Imprimer au kiosque et conserver les comptes." />
+      <PageTitle title="Documents" />
       <div className="document-list">
         <article>
           <FileText size={28} />
           <div>
             <h2>Catalogue du kiosque</h2>
-            <p>Produits du catalogue et prix de vente. PDF A4 adapté au noir et blanc.</p>
+            <p>Produits et prix, au format A4.</p>
           </div>
           <DownloadLink href={doc('catalogue')}>Télécharger le PDF</DownloadLink>
         </article>
@@ -837,10 +831,7 @@ function Documents() {
           <QrCode size={28} />
           <div>
             <h2>Affiche d’accès</h2>
-            <p>
-              Un QR code vers le kiosque et son adresse lisible. L’adresse HTTPS publique doit être
-              configurée.
-            </p>
+            <p>QR code et adresse du kiosque.</p>
           </div>
           {state.admin!.canonicalUrl ? (
             <DownloadLink href={doc('qr')}>Télécharger l’affiche</DownloadLink>
@@ -908,10 +899,7 @@ function Members() {
   }
   return (
     <>
-      <PageTitle
-        title="Membres et admins"
-        subtitle="Choisis un membre, puis Gérer pour lui donner ou retirer l’accès administrateur."
-      />
+      <PageTitle title="Membres et admins" subtitle="Comptes et accès administrateur." />
       <div className="search-field">
         <Search size={18} />
         <input
@@ -985,10 +973,7 @@ function Members() {
             <Field label="Téléphone">
               <input name="phone" type="tel" defaultValue={edit.phone} required />
             </Field>
-            <Field
-              label="Rôle"
-              hint="Administrateur : gère les produits, les ardoises et les autres admins. Membre : retire cet accès en conservant son compte."
-            >
+            <Field label="Rôle" hint="Administrateur : accès complet. Membre : accès au kiosque.">
               <select name="role" defaultValue={edit.role}>
                 <option value="member">Membre</option>
                 <option value="admin">Administrateur</option>
@@ -997,10 +982,7 @@ function Members() {
             <label className="check-line">
               <input name="active" type="checkbox" defaultChecked={edit.active} /> Compte actif
             </label>
-            <p className="muted">
-              La modification révoquera les sessions de ce compte. Les dettes et l’historique sont
-              conservés.
-            </p>
+            <p className="muted">Reconnexion requise. Solde et historique conservés.</p>
             <button className="button primary" disabled={busy}>
               Enregistrer les accès
             </button>
@@ -1082,10 +1064,7 @@ function Finance() {
   }
   return (
     <>
-      <PageTitle
-        title="Suivi financier"
-        subtitle="Les ventes, la marge et l’argent réellement encaissé."
-      >
+      <PageTitle title="Suivi financier">
         <button
           className="button secondary"
           disabled={working || !!pending}
@@ -1096,7 +1075,7 @@ function Finance() {
       </PageTitle>
       {pending && (
         <div className="notice-box">
-          <p>Une dépense attend confirmation. Retrouve-la avant de la ressaisir.</p>
+          <p>Une dépense attend confirmation.</p>
           <button className="button secondary" disabled={working} onClick={() => void save()}>
             <RefreshCw size={16} /> Retrouver la dépense
           </button>
@@ -1253,7 +1232,7 @@ function MissingCosts({ cents }: { cents: number }) {
               <Field
                 key={l.id}
                 label={`${l.product_name} · ${l.quantity} unité(s) · ${new Date(l.created_at).toLocaleDateString('fr-CH')}`}
-                hint="Coût pour une seule unité, en CHF."
+                hint="Par article, en CHF."
               >
                 <input
                   name={l.id}
