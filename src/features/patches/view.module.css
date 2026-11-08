@@ -2,6 +2,53 @@
   display: grid;
   gap: 24px;
 }
+.funding {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.fundingCounts,
+.fundingAmounts {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.fundingCounts > span,
+.fundingAmounts > span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.fundingAmounts > strong {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.funding progress {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin: 14px 0;
+  border: 0;
+  border-radius: var(--radius);
+  accent-color: var(--accent);
+  background: var(--line);
+}
+.funding progress::-webkit-progress-bar {
+  background: var(--line);
+  border-radius: var(--radius);
+}
+.funding progress::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: var(--radius);
+}
+.funding progress::-moz-progress-bar {
+  background: var(--accent);
+}
+.funding .help {
+  font-size: 14px;
+  margin-bottom: 0;
+}
 .campaign {
   border: 1px solid var(--line);
   border-radius: var(--radius);

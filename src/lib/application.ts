@@ -24,6 +24,7 @@ import {
   reservePatch,
   confirmPatchOrder,
   cancelPatchCampaign,
+  updatePatchEstimate,
 } from '@/features/patches/service';
 import {
   getAccountLedger,
@@ -132,6 +133,8 @@ export async function dispatch(
       return recordFreeEntry(db, user, input);
     case 'createPatchCampaign':
       return createPatchCampaign(db, user, input);
+    case 'updatePatchEstimate':
+      return updatePatchEstimate(db, user, input);
     case 'reservePatch':
       return reservePatch(db, user, input);
     case 'confirmPatchOrder':

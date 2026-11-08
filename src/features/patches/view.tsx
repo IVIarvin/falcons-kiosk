@@ -58,7 +58,7 @@ function CampaignHeading({ campaign: c }: { campaign: PatchCampaign }) {
       </div>
       <p className={styles.price}>
         {formatCHF(c.priceCents)}
-        <span>par patch</span>
+        <span>{c.status === 'ordered' ? 'prix définitif par patch' : 'estimation par patch'}</span>
       </p>
     </header>
   );
@@ -75,6 +75,39 @@ function CampaignCopy({ campaign: c }: { campaign: PatchCampaign }) {
         inclus.
       </p>
     </>
+  );
+}
+function CampaignProgress({ campaign: c }: { campaign: PatchCampaign }) {
+  const reached = c.totalCents >= c.fundingGoalCents;
+  return (
+    <section className={styles.funding} aria-label={`Objectif de précommandes ${c.name}`}>
+      <div className={styles.fundingCounts}>
+        <strong>
+          {c.totalQuantity} patch{c.totalQuantity > 1 ? 's' : ''} dans la section
+        </strong>
+        <span>
+          {c.reservationCount} réservation{c.reservationCount > 1 ? 's' : ''}
+        </span>
+      </div>
+      <progress
+        value={Math.min(c.totalCents, c.fundingGoalCents)}
+        max={c.fundingGoalCents}
+        aria-label="Progression des précommandes"
+        aria-valuetext={`${formatCHF(c.totalCents)} sur ${formatCHF(c.fundingGoalCents)}`}
+      />
+      <div className={styles.fundingAmounts}>
+        <strong>
+          {formatCHF(c.totalCents)} / {formatCHF(c.fundingGoalCents)}
+        </strong>
+        <span>{reached ? 'Objectif atteint' : 'Objectif minimum'}</span>
+      </div>
+      {c.status === 'open' && (
+        <p className={styles.help}>
+          Total estimé. Le responsable ajuste le prix selon la quantité et confirme le prix
+          définitif à la commande.
+        </p>
+      )}
+    </section>
   );
 }
 function Reservation({
@@ -96,9 +129,15 @@ function Reservation({
     <article className={styles.campaign}>
       <CampaignHeading campaign={c} />
       <CampaignCopy campaign={c} />
-      {c.myQuantity > 0 && (
+      <CampaignProgress campaign={c} />
+      {c.myQuantity > 0 && c.status !== 'cancelled' && (
         <p className={styles.reserved}>
           {c.myQuantity} patch{c.myQuantity > 1 ? 's' : ''} réservé{c.myQuantity > 1 ? 's' : ''}
+        </p>
+      )}
+      {c.status === 'cancelled' && c.myQuantity > 0 && (
+        <p className={styles.help}>
+          Ta réservation a été annulée. Aucun montant n’a été ajouté à ton ardoise.
         </p>
       )}
       {c.status === 'ordered' && c.myQuantity > 0 && (
@@ -124,7 +163,7 @@ function Reservation({
             />
           </Field>
           <div className={styles.reservationTotal}>
-            <span>Total réservé</span>
+            <span>Ton total estimé</span>
             <strong>
               {Number.isInteger(Number(quantity)) && Number(quantity) > 0
                 ? formatCHF(Number(quantity) * c.priceCents)
@@ -154,7 +193,7 @@ function Reservation({
       )}
       {!c.reservable && c.status === 'open' && (
         <p className={styles.help}>
-          En attente de la commande par le responsable. Ta réservation n’est plus modifiable.
+          En attente de la commande par le responsable. Les réservations ne sont plus modifiables.
         </p>
       )}
     </article>
@@ -163,7 +202,7 @@ function Reservation({
 export function PatchMemberView() {
   const { state } = useApp();
   const operation = usePatchAction('reservePatch');
-  const campaigns = state.patches.filter((c) => c.status === 'open' || c.myQuantity > 0);
+  const campaigns = state.patches.filter((c) => c.status !== 'cancelled' || c.myQuantity > 0);
   return (
     <>
       <PageTitle title="Patchs" subtitle="Réserve ta quantité. Le débit attend la commande." />
@@ -204,7 +243,14 @@ export function PatchAdminView() {
   const [creating, setCreating] = useState(false);
   const [confirming, setConfirming] = useState<PatchCampaign | null>(null);
   const [cancelling, setCancelling] = useState<PatchCampaign | null>(null);
+  const [editing, setEditing] = useState<PatchCampaign | null>(null);
+  const [finalPrice, setFinalPrice] = useState('');
   const [error, setError] = useState('');
+  let finalTotal: number | null = null;
+  try {
+    if (confirming && finalPrice.trim())
+      finalTotal = centsFromInput(finalPrice) * confirming.totalQuantity;
+  } catch {}
   const date = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Zurich' }).format(
     new Date(Date.now() + 14 * 86400000),
   );
@@ -217,6 +263,7 @@ export function PatchAdminView() {
         name: String(data.get('name')),
         description: String(data.get('description') ?? ''),
         priceCents: centsFromInput(String(data.get('price'))),
+        fundingGoalCents: centsFromInput(String(data.get('goal'))),
         deadline: String(data.get('deadline')),
       });
       setCreating(false);
@@ -227,16 +274,35 @@ export function PatchAdminView() {
   async function confirm(e: FormEvent) {
     e.preventDefault();
     if (!confirming) return;
+    if (finalTotal === null) return;
     const result = await order.perform(
       order.pending
         ? undefined
         : {
             campaignId: confirming.id,
             expectedTotalQuantity: confirming.totalQuantity,
-            expectedPriceCents: confirming.priceCents,
+            expectedPriceCents: confirming.estimatedPriceCents,
+            expectedFundingGoalCents: confirming.fundingGoalCents,
+            finalPriceCents: centsFromInput(finalPrice),
           },
     );
     if (result !== 'failed') setConfirming(null);
+  }
+  async function estimate(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editing) return;
+    setError('');
+    const data = new FormData(e.currentTarget);
+    try {
+      await run('updatePatchEstimate', {
+        campaignId: editing.id,
+        priceCents: centsFromInput(String(data.get('price'))),
+        fundingGoalCents: centsFromInput(String(data.get('goal'))),
+      });
+      setEditing(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
   }
   async function cancel() {
     if (!cancelling) return;
@@ -287,15 +353,7 @@ export function PatchAdminView() {
             <article className={styles.campaign} key={c.id}>
               <CampaignHeading campaign={c} />
               <CampaignCopy campaign={c} />
-              <p className={styles.adminTotal}>
-                <strong>
-                  {c.totalQuantity} patch{c.totalQuantity === 1 ? '' : 's'}
-                </strong>
-                <span>
-                  {c.participants.length} membre{c.participants.length === 1 ? '' : 's'} ·{' '}
-                  {formatCHF(c.totalCents ?? 0)}
-                </span>
-              </p>
+              <CampaignProgress campaign={c} />
               {c.participants.length > 0 && (
                 <details className={styles.participants}>
                   <summary>Voir les réservations</summary>
@@ -321,10 +379,22 @@ export function PatchAdminView() {
                     disabled={busy || order.working || order.pending || !c.totalQuantity}
                     onClick={() => {
                       order.clear();
+                      setError('');
+                      setFinalPrice((c.estimatedPriceCents / 100).toString());
                       setConfirming(c);
                     }}
                   >
                     <Shield size={18} /> Confirmer la commande passée
+                  </button>
+                  <button
+                    className="button secondary"
+                    disabled={busy || order.working || order.pending}
+                    onClick={() => {
+                      setError('');
+                      setEditing(c);
+                    }}
+                  >
+                    Ajuster l’estimation
                   </button>
                   <button
                     className="button secondary"
@@ -356,12 +426,15 @@ export function PatchAdminView() {
             <Field label="Description (facultative)">
               <textarea name="description" maxLength={1000} rows={3} />
             </Field>
-            <Field label="Prix par patch (CHF)">
+            <Field label="Prix estimé par patch (CHF)">
               <input name="price" inputMode="decimal" required />
+            </Field>
+            <Field label="Objectif minimum (CHF)">
+              <input name="goal" inputMode="decimal" defaultValue="100" required />
             </Field>
             <Field
               label="Dernier jour de réservation"
-              hint="Inclus, heure Suisse. Le prix reste fixe après publication."
+              hint="Inclus, heure Suisse. L’estimation peut être ajustée selon la quantité."
             >
               <input
                 name="deadline"
@@ -382,6 +455,46 @@ export function PatchAdminView() {
           </form>
         </Dialog>
       )}
+      {editing && (
+        <Dialog
+          title="Ajuster l’estimation"
+          onClose={() => {
+            if (!busy) setEditing(null);
+          }}
+        >
+          <form onSubmit={estimate}>
+            <h3>{editing.name}</h3>
+            <p className={styles.help}>
+              Ajuste l’estimation selon la quantité réservée et le devis fournisseur. Aucun débit à
+              cette étape.
+            </p>
+            <Field label="Prix estimé par patch (CHF)">
+              <input
+                name="price"
+                inputMode="decimal"
+                defaultValue={(editing.estimatedPriceCents / 100).toString()}
+                required
+              />
+            </Field>
+            <Field label="Objectif minimum (CHF)">
+              <input
+                name="goal"
+                inputMode="decimal"
+                defaultValue={(editing.fundingGoalCents / 100).toString()}
+                required
+              />
+            </Field>
+            {error && (
+              <p className={styles.error} role="alert">
+                {error}
+              </p>
+            )}
+            <button className="button primary full" disabled={busy}>
+              {busy ? <Busy /> : 'Enregistrer l’estimation'}
+            </button>
+          </form>
+        </Dialog>
+      )}
       {confirming && (
         <Dialog
           title="Confirmer la commande"
@@ -391,9 +504,24 @@ export function PatchAdminView() {
         >
           <form onSubmit={confirm}>
             <h3>{confirming.name}</h3>
+            <Field label="Prix définitif par patch (CHF)">
+              <input
+                inputMode="decimal"
+                value={finalPrice}
+                onChange={(e) => setFinalPrice(e.target.value)}
+                disabled={order.working || order.pending}
+                required
+              />
+            </Field>
             <p className={styles.confirmTotal}>
               {confirming.totalQuantity} patchs ·{' '}
-              <strong>{formatCHF(confirming.totalCents ?? 0)}</strong>
+              <strong>{finalTotal === null ? 'À renseigner' : formatCHF(finalTotal)}</strong>
+            </p>
+            <p className={styles.help}>
+              Objectif minimum : {formatCHF(confirming.fundingGoalCents)}.
+              {finalTotal !== null && finalTotal < confirming.fundingGoalCents
+                ? ' Le total au prix définitif est inférieur à cet objectif.'
+                : ''}
             </p>
             <p className={styles.help}>
               Confirme uniquement si la commande a été passée au fournisseur. Les montants seront
@@ -404,7 +532,14 @@ export function PatchAdminView() {
                 {order.error}
               </p>
             )}
-            <button className="button primary full" disabled={order.working}>
+            <button
+              className="button primary full"
+              disabled={
+                order.working ||
+                finalTotal === null ||
+                (!order.pending && finalTotal < confirming.fundingGoalCents)
+              }
+            >
               {order.working ? (
                 <Busy />
               ) : order.pending ? (

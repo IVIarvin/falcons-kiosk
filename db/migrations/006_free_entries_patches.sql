@@ -19,3 +19,5 @@ CREATE TABLE IF NOT EXISTS extra_requests (
  PRIMARY KEY(user_id,action,idempotency_key)
 );
 CREATE INDEX IF NOT EXISTS patch_reservations_user ON patch_reservations(user_id,campaign_id);
+ALTER TABLE patch_campaigns ADD COLUMN IF NOT EXISTS funding_goal_cents integer NOT NULL DEFAULT 10000 CHECK(funding_goal_cents>0);
+ALTER TABLE patch_campaigns ADD COLUMN IF NOT EXISTS final_price_cents integer CHECK(final_price_cents>=0);

@@ -8,6 +8,7 @@ import {
   confirmPatchOrder,
   cancelPatchCampaign,
   getPatchBoard,
+  updatePatchEstimate,
 } from '@/features/patches/service';
 import {
   getAccountLedger,
@@ -60,6 +61,7 @@ const campaign = (name: string) =>
     name,
     description: 'Patch de section',
     priceCents: 800,
+    fundingGoalCents: 1000,
     deadline: '2099-12-31',
   });
 const reserve = (campaignId: string, quantity: number, key: string, actor = member) =>
@@ -69,6 +71,8 @@ const confirm = (campaignId: string, quantity: number, key: string, actor = admi
     campaignId,
     expectedTotalQuantity: quantity,
     expectedPriceCents: 800,
+    finalPriceCents: 800,
+    expectedFundingGoalCents: 1000,
     idempotencyKey: key,
   });
 
@@ -98,7 +102,10 @@ it('facture un article libre sans créer de produit, et reprend sans double dett
 
 it('accepte aussi un article non alimentaire sans le compter comme boisson', async () => {
   const receipt = await free('other-item', { name: 'Briquet', category: 'Autre' });
-  const [line] = await db.query<{ is_beverage: boolean }>('SELECT is_beverage FROM consumption_lines WHERE consumption_id=$1', [receipt.id]);
+  const [line] = await db.query<{ is_beverage: boolean }>(
+    'SELECT is_beverage FROM consumption_lines WHERE consumption_id=$1',
+    [receipt.id],
+  );
   expect(line.is_beverage).toBe(false);
 });
 
@@ -183,7 +190,7 @@ it('protège les participants et interdit le retrait personnel des patchs comman
   const board = await getPatchBoard(db, member);
   const ordered = board.find((c) => c.status === 'ordered')!;
   expect(ordered.participants).toEqual([]);
-  expect(ordered.totalQuantity).toBeNull();
+  expect(ordered.totalQuantity).toBe(5);
   const [reservation] = await db.query<{ consumption_id: string }>(
     'SELECT consumption_id FROM patch_reservations WHERE campaign_id=$1 AND user_id=$2',
     [ordered.id, member.id],
@@ -206,6 +213,81 @@ it('protège les participants et interdit le retrait personnel des patchs comman
   expect((await getPatchBoard(db, member)).find((c) => c.id === ordered.id)?.myChargeVoided).toBe(
     true,
   );
+});
+
+it('partage l’objectif100CHF et les totaux sans exposer les noms des autres réservants', async () => {
+  const { id } = await createPatchCampaign(db, admin, {
+    name: 'Objectif public',
+    priceCents: 2000,
+    deadline: '2099-12-31',
+  });
+  await reserve(id, 3, 'public-count');
+  const publicCampaign = (await getPatchBoard(db, other)).find((c) => c.id === id)!;
+  expect(publicCampaign).toMatchObject({
+    fundingGoalCents: 10000,
+    totalQuantity: 3,
+    reservationCount: 1,
+    totalCents: 6000,
+    myQuantity: 0,
+  });
+  expect(publicCampaign.participants).toEqual([]);
+});
+
+it('ajuste l’estimation sans dette puis facture le prix final, avec objectif minimum', async () => {
+  const { id } = await createPatchCampaign(db, admin, {
+    name: 'Prix dégressif',
+    priceCents: 2000,
+    deadline: '2099-12-31',
+  });
+  await reserve(id, 3, 'price-reserve');
+  const before = (await getAccountLedger(db, member)).balanceCents;
+  await expect(
+    updatePatchEstimate(db, member, { campaignId: id, priceCents: 1500, fundingGoalCents: 10000 }),
+  ).rejects.toThrow(/responsable/);
+  await updatePatchEstimate(db, admin, {
+    campaignId: id,
+    priceCents: 1500,
+    fundingGoalCents: 10000,
+  });
+  expect((await getAccountLedger(db, member)).balanceCents).toBe(before);
+  const order = {
+    campaignId: id,
+    expectedTotalQuantity: 3,
+    expectedPriceCents: 1500,
+    finalPriceCents: 1400,
+    expectedFundingGoalCents: 10000,
+    idempotencyKey: 'final-price',
+  };
+  await expect(confirmPatchOrder(db, admin, order)).rejects.toThrow(/objectif/);
+  await updatePatchEstimate(db, admin, {
+    campaignId: id,
+    priceCents: 1500,
+    fundingGoalCents: 4000,
+  });
+  order.expectedFundingGoalCents = 4000;
+  await confirmPatchOrder(db, admin, order);
+  await confirmPatchOrder(db, admin, order);
+  expect((await getAccountLedger(db, member)).balanceCents).toBe(before + 4200);
+  expect((await getPatchBoard(db, other)).find((c) => c.id === id)).toMatchObject({
+    estimatedPriceCents: 1500,
+    priceCents: 1400,
+    finalPriceCents: 1400,
+    totalQuantity: 3,
+    totalCents: 4200,
+  });
+  await expect(
+    updatePatchEstimate(db, admin, { campaignId: id, priceCents: 1000, fundingGoalCents: 4000 }),
+  ).rejects.toThrow(/command/);
+  await expect(confirmPatchOrder(db, admin, { ...order, finalPriceCents: 1300 })).rejects.toThrow(
+    /autre/,
+  );
+});
+
+it('refuse une estimation devenue obsolète pendant le récapitulatif de commande', async () => {
+  const { id } = await campaign('Estimation changée');
+  await reserve(id, 3, 'estimate-reserve');
+  await updatePatchEstimate(db, admin, { campaignId: id, priceCents: 700, fundingGoalCents: 1000 });
+  await expect(confirm(id, 3, 'old-estimate')).rejects.toThrow(/changé/);
 });
 
 it('sauvegarde/restaure articles libres, réservations et reçus, et migre deux fois', async () => {

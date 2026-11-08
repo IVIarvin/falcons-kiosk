@@ -101,6 +101,8 @@ const columns: Record<string, string[]> = {
     'void_reason',
   ],
   patch_campaigns: [
+    'funding_goal_cents',
+    'final_price_cents',
     'id',
     'name',
     'description',
@@ -173,11 +175,17 @@ export async function restoreBackup(db: Database, input: unknown) {
             row[field] ??
             (name === 'products' && field === 'details'
               ? {}
-              : name === 'consumptions' && field === 'origin'
-                ? 'kiosk'
-                : name === 'consumption_lines' && field === 'removed_quantity'
-                  ? 0
-                  : null);
+              : name === 'patch_campaigns' && field === 'funding_goal_cents'
+                ? 10000
+                : name === 'patch_campaigns' &&
+                    field === 'final_price_cents' &&
+                    row.status === 'ordered'
+                  ? (row.price_cents ?? null)
+                  : name === 'consumptions' && field === 'origin'
+                    ? 'kiosk'
+                    : name === 'consumption_lines' && field === 'removed_quantity'
+                      ? 0
+                      : null);
           return (name === 'products' && field === 'details') ||
             (name === 'extra_requests' && field === 'result') ||
             (name === 'audit' &&

@@ -11,6 +11,8 @@ type CampaignRow = {
   name: string;
   description: string;
   price_cents: number;
+  funding_goal_cents: number;
+  final_price_cents: number | null;
   deadline: string;
   status: 'open' | 'ordered' | 'cancelled';
   reservable: boolean;
@@ -30,13 +32,17 @@ export type PatchCampaign = {
   name: string;
   description: string;
   priceCents: number;
+  estimatedPriceCents: number;
+  finalPriceCents: number | null;
+  fundingGoalCents: number;
+  reservationCount: number;
   deadline: string;
   status: CampaignRow['status'];
   reservable: boolean;
   myQuantity: number;
   myChargeVoided: boolean;
-  totalQuantity: number | null;
-  totalCents: number | null;
+  totalQuantity: number;
+  totalCents: number;
   participants: {
     userId: string;
     name: string;
@@ -54,22 +60,31 @@ export async function getPatchBoard(db: Database, actor: Member): Promise<PatchC
     `SELECT r.*,u.name,u.grade,c.reversed_at IS NOT NULL AS charge_voided FROM patch_reservations r JOIN users u ON u.id=r.user_id LEFT JOIN consumptions c ON c.id=r.consumption_id ${actor.role === 'admin' ? '' : 'WHERE r.user_id=$1'} ORDER BY u.name`,
     actor.role === 'admin' ? [] : [actor.id],
   );
+  const totals = await db.query<{ campaign_id: string; quantity: string; count: string }>(
+    'SELECT campaign_id,COALESCE(sum(quantity),0) AS quantity,count(*) FILTER(WHERE quantity>0) AS count FROM patch_reservations GROUP BY campaign_id',
+  );
   return campaigns.map((c) => {
     const rows = reservations.filter((r) => r.campaign_id === c.id);
     const own = rows.find((r) => r.user_id === actor.id);
-    const total = rows.reduce((s, r) => s + r.quantity, 0);
+    const aggregate = totals.find((row) => row.campaign_id === c.id);
+    const total = Number(aggregate?.quantity ?? 0);
+    const price = c.final_price_cents ?? c.price_cents;
     return {
       id: c.id,
       name: c.name,
       description: c.description,
-      priceCents: c.price_cents,
+      priceCents: price,
+      estimatedPriceCents: c.price_cents,
+      finalPriceCents: c.final_price_cents,
+      fundingGoalCents: c.funding_goal_cents,
+      reservationCount: Number(aggregate?.count ?? 0),
       deadline: c.deadline,
       status: c.status,
       reservable: c.reservable,
       myQuantity: own?.quantity ?? 0,
       myChargeVoided: own?.charge_voided ?? false,
-      totalQuantity: actor.role === 'admin' ? total : null,
-      totalCents: actor.role === 'admin' ? total * c.price_cents : null,
+      totalQuantity: total,
+      totalCents: total * price,
       participants:
         actor.role === 'admin'
           ? rows
@@ -101,6 +116,7 @@ export async function createPatchCampaign(db: Database, actor: Member, input: un
       name: z.string().trim().min(2).max(120),
       description: z.string().trim().max(1000).default(''),
       priceCents: z.number().int().min(0).max(1000000),
+      fundingGoalCents: z.number().int().min(1).max(100000000).default(10000),
       deadline: z
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -117,10 +133,53 @@ export async function createPatchCampaign(db: Database, actor: Member, input: un
   assert(date.valid, 'La date limite est déjà passée.');
   const id = randomUUID();
   await db.query(
-    'INSERT INTO patch_campaigns(id,name,description,price_cents,deadline,actor_id) VALUES($1,$2,$3,$4,$5,$6)',
-    [id, data.name, data.description, data.priceCents, data.deadline, actor.id],
+    'INSERT INTO patch_campaigns(id,name,description,price_cents,deadline,actor_id,funding_goal_cents) VALUES($1,$2,$3,$4,$5,$6,$7)',
+    [
+      id,
+      data.name,
+      data.description,
+      data.priceCents,
+      data.deadline,
+      actor.id,
+      data.fundingGoalCents,
+    ],
   );
   return { id };
+}
+export async function updatePatchEstimate(db: Database, actor: Member, input: unknown) {
+  requireAdmin(actor);
+  const data = z
+    .object({
+      campaignId: z.string().min(1),
+      priceCents: z.number().int().min(0).max(1000000),
+      fundingGoalCents: z.number().int().min(1).max(100000000),
+    })
+    .parse(input);
+  return db.transaction(async (tx) => {
+    const campaign = await lockedCampaign(tx, data.campaignId);
+    assert(campaign.status === 'open', 'Cette précommande est déjà commandée ou annulée.');
+    await tx.query('UPDATE patch_campaigns SET price_cents=$2,funding_goal_cents=$3 WHERE id=$1', [
+      campaign.id,
+      data.priceCents,
+      data.fundingGoalCents,
+    ]);
+    await tx.query(
+      'INSERT INTO audit(id,actor_id,action,reference_id,reason,before_data,after_data) VALUES($1,$2,$3,$4,$5,$6,$7)',
+      [
+        randomUUID(),
+        actor.id,
+        'patch-estimate',
+        campaign.id,
+        'Estimation ajustée selon la quantité',
+        JSON.stringify({
+          priceCents: campaign.price_cents,
+          fundingGoalCents: campaign.funding_goal_cents,
+        }),
+        JSON.stringify(data),
+      ],
+    );
+    return { id: campaign.id };
+  });
 }
 export async function reservePatch(db: Database, actor: Member, input: unknown) {
   const { idempotencyKey, ...data } = z
@@ -183,6 +242,8 @@ export async function confirmPatchOrder(
       campaignId: z.string().min(1),
       expectedTotalQuantity: z.number().int().min(1).max(1000000),
       expectedPriceCents: z.number().int().min(0).max(1000000),
+      finalPriceCents: z.number().int().min(0).max(1000000),
+      expectedFundingGoalCents: z.number().int().min(1).max(100000000),
       idempotencyKey: z.string().min(1).max(100),
     })
     .parse(input);
@@ -203,7 +264,8 @@ export async function confirmPatchOrder(
       [campaign.id],
     );
     const quantity = reservations.reduce((s, r) => s + r.quantity, 0);
-    const total = quantity * campaign.price_cents;
+    const finalPrice = campaign.final_price_cents ?? data.finalPriceCents;
+    const total = quantity * finalPrice;
     assert(
       Number.isSafeInteger(total) && total <= 100000000,
       'Le total de cette commande est trop élevé.',
@@ -220,10 +282,16 @@ export async function confirmPatchOrder(
     }
     assert(quantity > 0, 'Aucun patch réservé à commander.');
     assert(
-      quantity === data.expectedTotalQuantity && campaign.price_cents === data.expectedPriceCents,
+      quantity === data.expectedTotalQuantity &&
+        campaign.price_cents === data.expectedPriceCents &&
+        campaign.funding_goal_cents === data.expectedFundingGoalCents,
       'Les réservations ont changé. Vérifie le nouveau total avant de confirmer.',
       'PRICE_CHANGED',
       409,
+    );
+    assert(
+      total >= campaign.funding_goal_cents,
+      'L’objectif minimum de précommandes n’est pas atteint au prix définitif.',
     );
     for (const reservation of reservations) {
       await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [reservation.user_id]);
@@ -233,26 +301,19 @@ export async function confirmPatchOrder(
         [
           id,
           reservation.user_id,
-          reservation.quantity * campaign.price_cents,
+          reservation.quantity * finalPrice,
           `patch:${randomUUID()}`,
           requestHash({
             campaignId: campaign.id,
             quantity: reservation.quantity,
-            priceCents: campaign.price_cents,
+            priceCents: finalPrice,
           }),
           'patch',
         ],
       );
       await tx.query(
         'INSERT INTO consumption_lines(id,consumption_id,product_id,product_name,unit,quantity,price_cents,cost_micros,is_beverage) VALUES($1,$2,NULL,$3,$4,$5,$6,NULL,false)',
-        [
-          randomUUID(),
-          id,
-          `Patch · ${campaign.name}`,
-          'patch',
-          reservation.quantity,
-          campaign.price_cents,
-        ],
+        [randomUUID(), id, `Patch · ${campaign.name}`, 'patch', reservation.quantity, finalPrice],
       );
       await tx.query('UPDATE patch_reservations SET consumption_id=$2 WHERE id=$1', [
         reservation.id,
@@ -260,8 +321,8 @@ export async function confirmPatchOrder(
       ]);
     }
     await tx.query(
-      "UPDATE patch_campaigns SET status='ordered',ordered_at=now(),ordered_by=$2 WHERE id=$1",
-      [campaign.id, actor.id],
+      "UPDATE patch_campaigns SET status='ordered',ordered_at=now(),ordered_by=$2,final_price_cents=$3 WHERE id=$1",
+      [campaign.id, actor.id, finalPrice],
     );
     await tx.query(
       'INSERT INTO audit(id,actor_id,action,reference_id,reason,after_data) VALUES($1,$2,$3,$4,$5,$6)',

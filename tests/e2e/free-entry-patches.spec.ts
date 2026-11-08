@@ -139,7 +139,9 @@ test('patchs : réservation sans débit puis commande admin et ardoise confirmé
     await page.getByRole('button', { name: 'Créer une précommande', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Nouvelle précommande', exact: true });
     await dialog.getByLabel('Nom du patch', { exact: true }).fill('Falcons reconnaissance');
-    await dialog.getByLabel('Prix par patch (CHF)', { exact: true }).fill('8');
+    await dialog.getByLabel('Prix estimé par patch (CHF)', { exact: true }).fill('8');
+    await expect(dialog.getByLabel('Objectif minimum (CHF)', { exact: true })).toHaveValue('100');
+    await dialog.getByLabel('Objectif minimum (CHF)', { exact: true }).fill('12');
     await dialog.getByLabel('Dernier jour de réservation', { exact: true }).fill('2099-12-31');
     for (const width of [320, 390, 1440]) {
       await page.setViewportSize({ width, height: 900 });
@@ -158,14 +160,29 @@ test('patchs : réservation sans débit puis commande admin et ardoise confirmé
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole('button', { name: 'Réserver', exact: true }).click();
     await expect(page.getByText('2 patchs réservés', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('progressbar', { name: 'Progression des précommandes' }),
+    ).toHaveAttribute('aria-valuetext', 'CHF 16.00 sur CHF 12.00');
     expect((await getAccountLedger(ctx.db, ctx.member)).balanceCents).toBe(0);
     await capture(page, 'patch-reserved-390');
     ctx.use(ctx.admin);
     await page.goto('/admin/patchs');
     await capture(page, 'patch-admin-390');
+    await page.getByRole('button', { name: 'Ajuster l’estimation', exact: true }).click();
+    const estimateDialog = page.getByRole('dialog', { name: 'Ajuster l’estimation', exact: true });
+    await estimateDialog.getByLabel('Prix estimé par patch (CHF)', { exact: true }).fill('7.50');
+    await estimateDialog
+      .getByRole('button', { name: 'Enregistrer l’estimation', exact: true })
+      .click();
+    await expect(estimateDialog).not.toBeVisible();
     await page.getByRole('button', { name: 'Confirmer la commande passée', exact: true }).click();
     const confirmation = page.getByRole('dialog', { name: 'Confirmer la commande', exact: true });
-    await expect(confirmation).toContainText('CHF 16.00');
+    await confirmation.getByLabel('Prix définitif par patch (CHF)', { exact: true }).fill('5');
+    await expect(
+      confirmation.getByRole('button', { name: 'La commande a été passée', exact: true }),
+    ).toBeDisabled();
+    await confirmation.getByLabel('Prix définitif par patch (CHF)', { exact: true }).fill('7');
+    await expect(confirmation).toContainText('CHF 14.00');
     for (const width of [320, 390, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await capture(page, `patch-confirm-${width}`);
@@ -175,7 +192,7 @@ test('patchs : réservation sans débit puis commande admin et ardoise confirmé
       .getByRole('button', { name: 'La commande a été passée', exact: true })
       .click();
     await expect(confirmation).not.toBeVisible();
-    expect((await getAccountLedger(ctx.db, ctx.member)).balanceCents).toBe(1600);
+    expect((await getAccountLedger(ctx.db, ctx.member)).balanceCents).toBe(1400);
     ctx.use(ctx.member);
     await page.goto('/patchs');
     await expect(page.getByText('Commande passée', { exact: true })).toBeVisible();
