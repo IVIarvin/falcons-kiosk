@@ -23,7 +23,7 @@
 1. [x] Backend et données : tests intégration RED puis services/migration006, origine historique, coûts inconnus par LEFT JOIN, sauvegarde/restauration. Vérifier quantité absolue, date Suisse, annulation et absence de double débit/reprise.
 2. [x] Entrée libre : dialogue isolé au kiosque, total explicite, panier conservé, reprise réseau et commentaire existant ; test navigateur sans achat réel.
 3. [x] Patchs : pages membre/admin, création et réservations, confirmation du total courant, navigation mobile/desktop ; tests navigateur et contrôle 320/390/1440.
-4. [ ] Tests complets, TypeScript/build, revue indépendante et une passe corrective ; commit. Sauvegarde/migration production, déploiement Vercel du commit exact et vérification de la livraison.
+4. [x] Tests complets, TypeScript/build, revue indépendante et une passe corrective ; commit. Sauvegarde/migration production, déploiement Vercel du commit exact et vérification de la livraison.
 
 ## Review Focus
 
@@ -41,3 +41,10 @@
 - 17 captures 320/390/1440 ; pas d’erreur JavaScript ni débordement du document. Dates et valeurs sont des données de test, objectif ajusté à CHF 12 dans le scénario pour exercer la limite ; valeur initiale CHF 100 vérifiée.
 - Revue socle puis extension demandée en cours de travail : Sol6.1 medium, aucun Critical/Important/Minor.
 - Livraison commune prévue avec migration007 et l’autre chat ; aucune suppression de production demandée ni exécutée.
+
+## Livraison vérifiée
+
+- Commit commun `f036218f6e7464d799344fe7f43fd69cebbf2a18`, déploiement production `dpl_Ei7WAJDzp8XsYnem8WufPwGj4jUN`, état READY et alias `https://falcons-kiosk.vercel.app` vérifiés indépendamment via Vercel.
+- Sauvegarde privée préalable et empreinte vérifiée ; migrations006/007 additives appliquées, comptes et opérations existants conservés. Aucun reset de production.
+- Contrôle public Chrome : connexion200, manifeste200, état non authentifié401, route patchs protégée, nouveaux modules présents dans les7scripts client, aucune erreur JavaScript ni débordement, aucune opération métier soumise.
+- Preuves locales : `.data/release-006007-{backup,migration}-receipt.json` et `.impeccable/review/release-006007/production-checks.json`.

@@ -22,4 +22,8 @@
 
 Production cible : `https://falcons-kiosk.vercel.app`, projet `falcons-kiosk`, équipe configurée dans `.vercel/project.json`.
 
-Le socle précédent 00d2d07 est déjà publié. Les nouveaux modules sont coordonnés avec le lot Données/favoris de l’autre chat : sauvegarde avant migrations006/007, construction du commit commun, publication puis contrôle de l’état READY et de l’URL. Aucune remise à zéro de production n’est autorisée par cette livraison.
+Livraison commune effectuée avec le lot Données/favoris de l’autre chat : commit `f036218f6e7464d799344fe7f43fd69cebbf2a18`, déploiement `dpl_Ei7WAJDzp8XsYnem8WufPwGj4jUN`. État READY, cible production et alias public confirmés via l’API Vercel. Sauvegarde avant migrations006/007, empreinte vérifiée et comptes/opérations existants conservés ; aucun reset de production.
+
+Contrôle public indépendant dans Chrome : connexion et manifeste200, API état401 sans session, route Patchs renvoyée à la connexion ; les7scripts client servis contiennent les entrées libre et objectif/prix final. Aucun débordement, aucune erreur JavaScript ni mutation de production pendant ce contrôle. Preuve `.impeccable/review/release-006007/production-checks.json`.
+
+Contrôle authentifié de livraison par l’autre chat : API état200, écran Données200/no-store, anonyme401 ; session technique temporaire supprimée après le contrôle. Preuve privée `.data/release-006007-production-smoke.json`. Les contrôles n’ont enregistré aucun achat, règlement ou reset réel.
