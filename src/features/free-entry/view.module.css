@@ -1,0 +1,55 @@
+.entry {
+  margin: -4px 0 20px;
+}
+.entry button {
+  min-height: 44px;
+}
+.help {
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 16px 0;
+  margin-bottom: 16px;
+  border-block: 1px solid var(--line);
+}
+.total strong {
+  white-space: nowrap;
+  font: 600 26px var(--heading);
+  font-variant-numeric: tabular-nums;
+}
+.error {
+  color: var(--danger);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.confirmation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.confirmation svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.finish {
+  margin-top: 24px;
+}
+@media (max-width: 760px) {
+  .entry button {
+    width: 100%;
+  }
+}

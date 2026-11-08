@@ -28,11 +28,12 @@ export async function getAccountLedger(
   const purchases = await db.query<{
     id: string;
     total_cents: number;
+    origin: 'kiosk' | 'free' | 'patch';
     created_at: string;
     reversed_at: string | null;
     reason: string | null;
   }>(
-    'SELECT id,total_cents,created_at,reversed_at,reason FROM consumptions WHERE user_id=$1 ORDER BY created_at DESC',
+    'SELECT id,total_cents,origin,created_at,reversed_at,reason FROM consumptions WHERE user_id=$1 ORDER BY created_at DESC',
     [userId],
   );
   const lines = await db.query<{
@@ -62,9 +63,17 @@ export async function getAccountLedger(
         .filter((l) => l.consumption_id === p.id)
         .reduce((total, l) => total + (l.quantity - l.removed_quantity) * l.price_cents, 0),
       at: new Date(p.created_at).toISOString(),
-      label: 'Consommation',
+      label:
+        p.origin === 'free'
+          ? 'Article libre'
+          : p.origin === 'patch'
+            ? 'Précommande de patchs'
+            : 'Consommation',
       voided: !!p.reversed_at,
-      removableUntil: new Date(new Date(p.created_at).getTime() + 600000).toISOString(),
+      removableUntil:
+        p.origin === 'patch'
+          ? undefined
+          : new Date(new Date(p.created_at).getTime() + 600000).toISOString(),
       reason: p.reason ?? undefined,
       lines: lines
         .filter((l) => l.consumption_id === p.id)
@@ -175,8 +184,9 @@ export async function removeConsumptionLine(db: Database, actor: Member, input: 
       removed_quantity: number;
       reversed_at: string | null;
       within_deadline: boolean;
+      origin: string;
     }>(
-      `SELECT c.user_id,l.quantity,l.removed_quantity,c.reversed_at,c.created_at+interval '10 minutes'>clock_timestamp() AS within_deadline FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id WHERE l.id=$1 FOR UPDATE OF l`,
+      `SELECT c.user_id,c.origin,l.quantity,l.removed_quantity,c.reversed_at,c.created_at+interval '10 minutes'>clock_timestamp() AS within_deadline FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id WHERE l.id=$1 FOR UPDATE OF l`,
       [p.lineId],
     );
     assert(
@@ -184,6 +194,10 @@ export async function removeConsumptionLine(db: Database, actor: Member, input: 
       'Accès à cette consommation refusé.',
       'FORBIDDEN',
       403,
+    );
+    assert(
+      line.origin !== 'patch',
+      'Ces patchs ont été commandés. Demande une correction au responsable.',
     );
     assert(!line.reversed_at, 'Cette consommation est déjà annulée.');
     assert(

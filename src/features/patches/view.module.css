@@ -1,0 +1,166 @@
+.list {
+  display: grid;
+  gap: 24px;
+}
+.campaign {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+  min-width: 0;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+.heading > div {
+  min-width: 0;
+}
+.heading h2 {
+  font-size: 26px;
+  overflow-wrap: anywhere;
+  margin-bottom: 8px;
+}
+.price {
+  font: 600 26px var(--heading);
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.price > span {
+  display: block;
+  color: var(--muted);
+  font: 400 13px var(--body);
+  margin-top: 4px;
+}
+.description {
+  line-height: 1.5;
+  margin-top: 18px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.deadline {
+  color: var(--muted);
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.reserved {
+  font-weight: 600;
+  margin-top: 20px;
+  color: var(--accent);
+}
+.reserveForm {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 20px;
+}
+.reserveForm > label {
+  max-width: 180px;
+}
+.reservationTotal,
+.adminTotal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.reservationTotal > strong,
+.adminTotal > span,
+.confirmTotal > strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.reservationTotal > span {
+  color: var(--muted);
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.actions button {
+  min-height: 44px;
+  white-space: normal;
+}
+.help {
+  color: var(--muted);
+  margin: 16px 0;
+  line-height: 1.5;
+}
+.help a {
+  color: var(--accent);
+}
+.error {
+  color: var(--danger);
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+.adminTotal {
+  margin-top: 20px;
+}
+.adminTotal > strong {
+  font: 600 24px var(--heading);
+}
+.participants {
+  margin: 20px 0;
+}
+.participants summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding-block: 12px;
+}
+.participants ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.participants li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-block: 14px;
+}
+.participants li > span:first-child {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.participants li > span:nth-child(2) {
+  white-space: nowrap;
+}
+.participants small {
+  flex-basis: 100%;
+  color: var(--danger);
+}
+.confirmTotal {
+  font-size: 18px;
+  margin: 16px 0;
+}
+@media (max-width: 760px) {
+  .campaign {
+    padding: 20px 16px;
+  }
+  .heading {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .price {
+    text-align: left;
+  }
+  .price > span {
+    display: inline;
+    margin-left: 8px;
+  }
+  .actions {
+    flex-direction: column;
+  }
+  .actions button {
+    width: 100%;
+  }
+}

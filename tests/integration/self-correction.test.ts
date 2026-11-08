@@ -145,11 +145,16 @@ it('sauvegarde et restaure les retraits sans changer le solde', async () => {
 it('restaure les anciennes sauvegardes avec zéro retrait', async () => {
   const backup = await createBackup(db, admin);
   delete backup.tables.consumption_removals;
+  delete backup.tables.patch_campaigns;
+  delete backup.tables.patch_reservations;
+  delete backup.tables.extra_requests;
+  for (const row of backup.tables.consumptions as Record<string, unknown>[]) delete row.origin;
   for (const line of backup.tables.consumption_lines as Record<string, unknown>[])
     delete line.removed_quantity;
   const restored = await createTestDatabase();
   try {
     await restoreBackup(restored, backup);
+    expect(await restored.query("SELECT id FROM consumptions WHERE origin<>'kiosk'")).toHaveLength(0);
     expect(
       await restored.query('SELECT id FROM consumption_lines WHERE removed_quantity<>0'),
     ).toHaveLength(0);

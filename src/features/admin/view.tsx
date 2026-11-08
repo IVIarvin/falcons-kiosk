@@ -19,6 +19,7 @@ import { useApp } from '@/components/context';
 import { PageTitle, Empty, Dialog, Field, Busy, DownloadLink } from '@/components/ui';
 import { PillerAdminPanel, PillerLibrary } from '@/features/piller/panel';
 import { ProductEditor } from '@/features/catalog/editor';
+import { PatchAdminView } from '@/features/patches/view';
 import { ProductImage } from '@/features/catalog/image';
 import { kindLabels } from '@/features/catalog/details';
 import { LedgerList } from '@/features/ledger/view';
@@ -39,6 +40,8 @@ export function AdminView({ section }: { section: string }) {
   const { state } = useApp();
   if (!state.admin) return <Empty title="Accès réservé au responsable." />;
   switch (section) {
+    case 'patchs':
+      return <PatchAdminView />;
     case 'produits':
       return <Products />;
     case 'achats':
@@ -756,6 +759,9 @@ function Settings() {
     <>
       <PageTitle title="Réglages" />
       <div className="admin-more-links">
+        <Link className="button secondary" href="/admin/patchs">
+          Précommandes de patchs <ArrowUpRight size={16} />
+        </Link>
         <Link className="button secondary" href="/admin/finance">
           Suivi financier <ArrowUpRight size={16} />
         </Link>

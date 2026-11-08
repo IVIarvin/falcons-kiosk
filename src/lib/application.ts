@@ -17,6 +17,14 @@ import {
   publishPrices,
 } from '@/features/catalog/service';
 import { checkout } from '@/features/checkout/service';
+import { recordFreeEntry } from '@/features/free-entry/service';
+import {
+  getPatchBoard,
+  createPatchCampaign,
+  reservePatch,
+  confirmPatchOrder,
+  cancelPatchCampaign,
+} from '@/features/patches/service';
 import {
   getAccountLedger,
   getAccounts,
@@ -83,7 +91,7 @@ export async function getSnapshot(db: Database, user: Member) {
               created_at: string;
               current_cost: string | null;
             }>(
-              'SELECT l.id,l.product_name,(l.quantity-l.removed_quantity) AS quantity,c.created_at,p.cost_micros AS current_cost FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id JOIN products p ON p.id=l.product_id WHERE l.cost_micros IS NULL AND l.quantity>l.removed_quantity AND c.reversed_at IS NULL ORDER BY c.created_at LIMIT 100',
+              'SELECT l.id,l.product_name,(l.quantity-l.removed_quantity) AS quantity,c.created_at,p.cost_micros AS current_cost FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id LEFT JOIN products p ON p.id=l.product_id WHERE l.cost_micros IS NULL AND l.quantity>l.removed_quantity AND c.reversed_at IS NULL ORDER BY c.created_at LIMIT 100',
             )
           ).map((l) => ({
             ...l,
@@ -106,6 +114,7 @@ export async function getSnapshot(db: Database, user: Member) {
         : products.map((p) => ({ ...p, cost_micros: null, price_mode: 'manual' as const })),
     ledger,
     community,
+    patches: await getPatchBoard(db, user),
     pillerEnabled: settings.piller_enabled,
     admin,
   };
@@ -119,6 +128,16 @@ export async function dispatch(
 ): Promise<unknown> {
   assert(user.active, 'Compte désactivé.', 'AUTH', 401);
   switch (action) {
+    case 'freeCheckout':
+      return recordFreeEntry(db, user, input);
+    case 'createPatchCampaign':
+      return createPatchCampaign(db, user, input);
+    case 'reservePatch':
+      return reservePatch(db, user, input);
+    case 'confirmPatchOrder':
+      return confirmPatchOrder(db, user, input);
+    case 'cancelPatchCampaign':
+      return cancelPatchCampaign(db, user, input);
     case 'pillerQuote':
       return savePillerQuote(db, user, input);
     case 'searchProducts':

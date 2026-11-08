@@ -12,6 +12,7 @@ import { ProductImage, ProductAttribution } from '@/features/catalog/image';
 import { matchesProductSearch } from '@/features/catalog/browse';
 import { productCategories } from '@/features/catalog/categories';
 import styles from './browse.module.css';
+import { FreeEntryButton } from '@/features/free-entry/view';
 export function KioskView() {
   const { state, refresh, notice } = useApp();
   const [category, setCategory] = useState('Tout');
@@ -124,6 +125,7 @@ export function KioskView() {
           </button>
         ))}
       </div>
+      <FreeEntryButton />
       {pending && (
         <div className="notice-box">
           <p>Un achat attend confirmation.</p>

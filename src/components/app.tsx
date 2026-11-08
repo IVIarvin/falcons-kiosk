@@ -17,6 +17,7 @@ import {
   RefreshCw,
   WifiOff,
   X,
+  Shield,
 } from 'lucide-react';
 import type { Snapshot } from '@/lib/application';
 import { api, ApiError, authEvent } from '@/lib/client';
@@ -28,9 +29,11 @@ import { ArdoiseView } from '@/features/ledger/view';
 import { CrewView } from '@/features/achievements/view';
 import { ProfileView } from '@/features/profile/view';
 import { AdminView } from '@/features/admin/view';
+import { PatchMemberView } from '@/features/patches/view';
 const memberLinks = [
   { href: '/', label: 'Kiosque', Icon: ShoppingCart },
   { href: '/ardoise', label: 'Ardoise', Icon: ReceiptText },
+  { href: '/patchs', label: 'Patchs', Icon: Shield },
   { href: '/falcons', label: 'Falcons', Icon: Users },
   { href: '/profil', label: 'Profil', Icon: UserRound },
 ];
@@ -39,9 +42,17 @@ const adminLinks = [
   { href: '/admin/produits', label: 'Produits', Icon: Package },
   { href: '/admin/achats', label: 'Achats', Icon: ClipboardList },
   { href: '/admin/finance', label: 'Finances', Icon: ChartNoAxesCombined },
+  { href: '/admin/patchs', label: 'Patchs', Icon: Shield },
   { href: '/admin/section', label: 'Membres', Icon: Users },
   { href: '/admin/documents', label: 'Documents', Icon: FileText },
   { href: '/admin/reglages', label: 'Réglages', Icon: Settings },
+];
+const adminMobilePaths = [
+  '/admin',
+  '/admin/produits',
+  '/admin/achats',
+  '/admin/section',
+  '/admin/reglages',
 ];
 export function App({ demo = false }: { demo?: boolean }) {
   const pathname = usePathname();
@@ -193,6 +204,9 @@ export function App({ demo = false }: { demo?: boolean }) {
     );
   const admin = pathname.startsWith('/admin') && state.user.role === 'admin';
   const links = admin ? adminLinks : memberLinks;
+  const mobileLinks = admin
+    ? adminLinks.filter((link) => adminMobilePaths.includes(link.href))
+    : memberLinks;
   return (
     <AppContext.Provider
       key={state.user.id}
@@ -285,6 +299,8 @@ export function App({ demo = false }: { demo?: boolean }) {
             </div>
           ) : pathname === '/ardoise' ? (
             <ArdoiseView />
+          ) : pathname === '/patchs' ? (
+            <PatchMemberView />
           ) : pathname === '/falcons' ? (
             <CrewView />
           ) : pathname === '/profil' ? (
@@ -296,17 +312,14 @@ export function App({ demo = false }: { demo?: boolean }) {
         <nav
           className={`mobile-nav ${admin ? 'admin-mobile-nav' : ''}`}
           aria-label="Navigation mobile"
+          style={{ gridTemplateColumns: `repeat(${mobileLinks.length}, minmax(0, 1fr))` }}
         >
-          {(admin
-            ? adminLinks.filter(
-                (link) => !['/admin/finance', '/admin/documents'].includes(link.href),
-              )
-            : memberLinks
-          ).map(({ href, label, Icon }) => {
+          {mobileLinks.map(({ href, label, Icon }) => {
             const currentPage = pathname === href;
             const currentGroup =
               href === '/admin/reglages' &&
-              ['/admin/finance', '/admin/documents'].includes(pathname);
+              pathname.startsWith('/admin/') &&
+              !adminMobilePaths.includes(pathname);
             return (
               <Link
                 key={href}

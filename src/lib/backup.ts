@@ -41,6 +41,7 @@ const columns: Record<string, string[]> = {
     'created_at',
   ],
   consumptions: [
+    'origin',
     'id',
     'user_id',
     'total_cents',
@@ -99,6 +100,28 @@ const columns: Record<string, string[]> = {
     'voided_by',
     'void_reason',
   ],
+  patch_campaigns: [
+    'id',
+    'name',
+    'description',
+    'price_cents',
+    'deadline',
+    'status',
+    'actor_id',
+    'created_at',
+    'ordered_at',
+    'ordered_by',
+  ],
+  patch_reservations: [
+    'id',
+    'campaign_id',
+    'user_id',
+    'quantity',
+    'consumption_id',
+    'created_at',
+    'updated_at',
+  ],
+  extra_requests: ['user_id', 'action', 'idempotency_key', 'request_hash', 'result', 'created_at'],
   audit: [
     'id',
     'actor_id',
@@ -127,7 +150,13 @@ export async function restoreBackup(db: Database, input: unknown) {
   assert(backup.format === 'falcons-backup-v1' && backup.tables, 'Format de sauvegarde invalide.');
   for (const name of Object.keys(columns))
     assert(
-      (['piller_quotes', 'consumption_removals'].includes(name) &&
+      ([
+        'piller_quotes',
+        'consumption_removals',
+        'patch_campaigns',
+        'patch_reservations',
+        'extra_requests',
+      ].includes(name) &&
         backup.tables[name] === undefined) ||
         Array.isArray(backup.tables[name]),
       `Table absente : ${name}.`,
@@ -144,10 +173,13 @@ export async function restoreBackup(db: Database, input: unknown) {
             row[field] ??
             (name === 'products' && field === 'details'
               ? {}
-              : name === 'consumption_lines' && field === 'removed_quantity'
-                ? 0
-                : null);
+              : name === 'consumptions' && field === 'origin'
+                ? 'kiosk'
+                : name === 'consumption_lines' && field === 'removed_quantity'
+                  ? 0
+                  : null);
           return (name === 'products' && field === 'details') ||
+            (name === 'extra_requests' && field === 'result') ||
             (name === 'audit' &&
               (field === 'before_data' || field === 'after_data') &&
               value !== null)
