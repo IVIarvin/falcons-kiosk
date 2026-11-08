@@ -328,7 +328,30 @@ function Settlements() {
 function Products() {
   const { state } = useApp();
   const [editing, setEditing] = useState<Product | 'new' | null>(null);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
+  const [availability, setAvailability] = useState('active');
   const p = editing && editing !== 'new' ? editing : null;
+  const normalized = (text: string) =>
+    text
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLocaleLowerCase('fr');
+  const query = normalized(search.trim());
+  const categories = [...new Set(state.products.map((product) => product.category))].sort((a, b) =>
+    a.localeCompare(b, 'fr'),
+  );
+  const visibleProducts = state.products.filter(
+    (product) =>
+      (!query || normalized(product.name).includes(query)) &&
+      (!category || product.category === category) &&
+      (availability === 'all' || product.active === (availability === 'active')),
+  );
+  function resetFilters(showAll = false) {
+    setSearch('');
+    setCategory('');
+    setAvailability(showAll ? 'all' : 'active');
+  }
   return (
     <>
       <PageTitle title="Produits" subtitle="Le catalogue et les prix du kiosque.">
@@ -336,9 +359,58 @@ function Products() {
           <Plus size={18} /> Ajouter un produit
         </button>
       </PageTitle>
+      {!!state.products.length && (
+        <section className="catalogue-filters" aria-label="Filtrer le catalogue">
+          <div className="catalogue-filter-fields">
+            <Field label="Rechercher un produit">
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nom du produit"
+              />
+            </Field>
+            <Field label="Catégorie des produits">
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="">Toutes les catégories</option>
+                {categories.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="État des produits">
+              <select value={availability} onChange={(e) => setAvailability(e.target.value)}>
+                <option value="active">Au catalogue</option>
+                <option value="inactive">Désactivés</option>
+                <option value="all">Tous les produits</option>
+              </select>
+            </Field>
+          </div>
+          <div className="catalogue-filter-result">
+            <p role="status">
+              {visibleProducts.length} produit{visibleProducts.length > 1 ? 's' : ''} affiché
+              {visibleProducts.length > 1 ? 's' : ''} sur {state.products.length}
+            </p>
+            {(search || category || availability !== 'active') && (
+              <button className="text-button" onClick={() => resetFilters()}>
+                Réinitialiser les filtres
+              </button>
+            )}
+          </div>
+        </section>
+      )}
       {!state.products.length ? (
         <Empty title="Le premier ravitaillement t’attend.">
           Ajoute un produit avec son prix de vente.
+        </Empty>
+      ) : !visibleProducts.length ? (
+        <Empty title="Aucun produit ne correspond.">
+          Essaie un autre nom ou change la catégorie et l’état des produits.
+          <button className="button secondary" onClick={() => resetFilters(true)}>
+            Voir tous les produits
+          </button>
         </Empty>
       ) : (
         <div className="table-wrap">
@@ -354,7 +426,7 @@ function Products() {
               </tr>
             </thead>
             <tbody>
-              {state.products.map((p) => (
+              {visibleProducts.map((p) => (
                 <tr key={p.id}>
                   <td className="record-title">
                     <div className="admin-product">

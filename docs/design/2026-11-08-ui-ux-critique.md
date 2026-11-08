@@ -34,8 +34,8 @@ L’identité tactique est cohérente, mature et propre à Falcons : noir teint�
 1. **P1 — Actions administratives mobiles hors champ : corrigé.** Le tableau produits atteignait environ 776px dans une zone de 276px à 320px ; le bouton Modifier se trouvait autour de x737. Achats et dépenses avaient le même problème. Il s’agissait d’un défilement interne non annoncé, pas d’un débordement global. Les trois listes deviennent maintenant des fiches à libellés, avec montants et actions visibles dans la largeur du téléphone. Les tableaux restent disponibles sur ordinateur. Commande adaptée : Impeccable adapt.
 2. **P2 — « Contributeurs » dépassait son bouton : corrigé.** Les trois commandes égales laissaient environ 90px par bouton à 320px. Les deux types de classement ont désormais leur propre ligne ; le texte tient sans diminuer sa police. Le test mesure le rectangle réel du texte, pas seulement la largeur du document. Commande : adapt.
 3. **P2 — Indicateur et période mélangés : corrigé.** « Contributeurs », « Buveurs », « Depuis le début » mélangeaient deux axes. Le type et la période des contributions sont maintenant séparés. Les trois jeux de données existants sont conservés ; le classement boissons reste hebdomadaire. L’état sélectionné est annoncé par `aria-pressed`. Commande : clarify.
-4. **P2 — Catalogue admin sans recherche ni filtre d’état : reste ouvert.** Les archives se mêlent aux produits actifs. Ajouter une recherche de nom et un accès explicite aux désactivés réduirait le temps de recherche. Les nombreux noms QA observés sont des données de démonstration ; ils ne sont pas un défaut de marque. Commande : distill/onboard.
-5. **P2 — Retour de focus après dialogue : reste ouvert.** Dans la revue B, fermer l’aide d’installation ou l’éditeur ramenait le focus clavier sur BODY plutôt que sur le déclencheur. Conserver le déclencheur et lui rendre le focus après fermeture. La fermeture Escape et l’isolation modale fonctionnaient. Commande : harden.
+4. **P2 — Catalogue admin sans recherche ni filtre d’état : corrigé dans la suite du 8 novembre.** Recherche insensible aux accents/casse, catégorie et actifs/désactivés/tous sont combinables. Les produits actifs sont affichés par défaut ; un résultat vide permet de tout afficher à nouveau. Les nombreux noms QA observés sont des données de démonstration ; ils ne sont pas un défaut de marque. Commande appliquée : distill/adapt.
+5. **P2 — Retour de focus après dialogue : corrigé dans la suite du 8 novembre.** Dans la revue B, fermer l’aide d’installation ou l’éditeur ramenait le focus clavier sur BODY. Le déclencheur est désormais conservé puis focalisé après fermeture s’il existe encore. Escape et le bouton Fermer ont été vérifiés. Commande appliquée : harden.
 
 ## Charge cognitive, personnes et parcours
 
@@ -74,3 +74,15 @@ Racine : `.impeccable/review/ui-ux-2026-11-08/`.
 
 1. Priorité suivante : recherche/archives du catalogue, ou position/distinctions personnelles plus visibles dans Falcons ?
 2. Périmètre suivant : ces améliorations de parcours seulement, ou également le focus clavier et les repères de navigation ?
+
+## Suite autorisée : « fais des propositions et continue pour améliorer »
+
+La suite traite les deux priorités restantes ainsi que la découverte des distinctions :
+
+- La recherche catalogue tolère les accents/casse et se combine avec catégorie/état. Les menus sont empilés jusqu’à 480px pour ne pas couper les valeurs. Aucun produit ni historique n’est supprimé.
+- La position et le score personnels suivent le classement affiché, avant la liste. « Voir ma ligne » rejoint l’entrée personnelle. Un membre absent du classement est annoncé « Pas encore classé », sans rang inventé.
+- Les distinctions sont accessibles avant la liste, avec le dernier badge daté en résumé puis la collection dépliable. Les données et règles d’attribution restent inchangées.
+- Les liens courants exposent `aria-current`. Sur Finances/Documents mobile, Plus reste visuellement actif avec la valeur `location`, sans prétendre que Réglages est la page ouverte.
+- Les boutons icônes et liens d’authentification atteignent 44px ; le dialogue restitue le focus au déclencheur encore présent.
+
+Vérifications de cette suite : **4/4 scénarios Chrome** (catalogue, position/distinctions, clavier et adaptation mobile), TypeScript réussi, 18 captures finales à 320/390/1440px sans erreur JavaScript ni débordement de document. Revue indépendante GPT‑6.1 Sol en réflexion moyenne : aucun Critical/Important. Captures dans `.impeccable/review/ux-followup-2026-11-08/`, dont `member-falcons-390.png`, `member-falcons-expanded-390.png`, `admin-admin-produits-320.png` et `admin-produits-empty-390.png`. Aucun nouveau score heuristique ni certification d’accessibilité n’est déduit de cette passe.

@@ -206,7 +206,12 @@ export function App({ demo = false }: { demo?: boolean }) {
           <span className="sidebar-caption">{admin ? 'Administration' : 'Kiosque de section'}</span>
           <nav aria-label={admin ? 'Administration' : 'Navigation principale'}>
             {links.map(({ href, label, Icon }) => (
-              <Link key={href} href={href} className={pathname === href ? 'active' : ''}>
+              <Link
+                key={href}
+                href={href}
+                className={pathname === href ? 'active' : ''}
+                aria-current={pathname === href ? 'page' : undefined}
+              >
                 <Icon size={20} />
                 {label}
               </Link>
@@ -297,12 +302,23 @@ export function App({ demo = false }: { demo?: boolean }) {
                 (link) => !['/admin/finance', '/admin/documents'].includes(link.href),
               )
             : memberLinks
-          ).map(({ href, label, Icon }) => (
-            <Link key={href} href={href} className={pathname === href ? 'active' : ''}>
-              <Icon size={23} />
-              <span>{href === '/admin/reglages' ? 'Plus' : label}</span>
-            </Link>
-          ))}
+          ).map(({ href, label, Icon }) => {
+            const currentPage = pathname === href;
+            const currentGroup =
+              href === '/admin/reglages' &&
+              ['/admin/finance', '/admin/documents'].includes(pathname);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={currentPage || currentGroup ? 'active' : ''}
+                aria-current={currentPage ? 'page' : currentGroup ? 'location' : undefined}
+              >
+                <Icon size={23} />
+                <span>{href === '/admin/reglages' ? 'Plus' : label}</span>
+              </Link>
+            );
+          })}
         </nav>
         {toast && (
           <div className="toast" role="status">
