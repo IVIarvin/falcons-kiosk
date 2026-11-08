@@ -38,7 +38,7 @@ export function KioskView() {
   }, [receipt]);
   const products = state.products.filter((p) => p.active);
   useEffect(() => {
-    const allowed = new Set(state.products.filter((p) => p.active && p.available).map((p) => p.id));
+    const allowed = new Set(state.products.filter((p) => p.active).map((p) => p.id));
     const remaining = Object.fromEntries(Object.entries(cart).filter(([id]) => allowed.has(id)));
     if (Object.keys(remaining).length !== Object.keys(cart).length) {
       setCart(remaining);
@@ -124,18 +124,16 @@ export function KioskView() {
           {products
             .filter((p) => category === 'Tout' || p.category === category)
             .map((p) => (
-              <article key={p.id} className={`product-card ${!p.available ? 'unavailable' : ''}`}>
+              <article key={p.id} className="product-card">
                 <div className="product-image">
                   <ProductImage src={p.image} name={p.name} />
                 </div>
                 <ProductAttribution image={p.image} details={p.details} />
                 <h2>{p.name}</h2>
-                <span className="product-unit">{p.unit}</span>
+                <span className="product-unit">{p.unit === 'pièce' ? '' : p.unit}</span>
                 <div className="product-footer">
                   <strong>{formatCHF(p.price_cents)}</strong>
-                  {!p.available ? (
-                    <span className="muted">Indisponible</span>
-                  ) : cart[p.id] > 0 ? (
+                  {cart[p.id] > 0 ? (
                     <div className="quantity">
                       <button
                         className="icon-button"

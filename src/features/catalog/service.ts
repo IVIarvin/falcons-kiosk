@@ -6,14 +6,15 @@ import { assert } from '@/lib/errors';
 import { priceFromCost } from '@/lib/money';
 import { requireAdmin, type Member } from '@/features/auth/service';
 import { detailsSchema } from './details';
+import { productCategories } from './categories';
 import { requestHash } from '@/features/ledger/service';
 
 const productSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(2).max(90),
-  unit: z.string().trim().min(1).max(40),
+  unit: z.string().trim().min(1).max(40).default('pièce'),
   category: z.string().trim().min(1).max(40),
-  is_beverage: z.boolean(),
+  is_beverage: z.boolean().default(false),
   price_cents: z.number().int().min(0).max(100000000),
   price_mode: z.enum(['auto', 'manual']),
   cost_micros: z.number().int().min(0).max(1000000000000).nullable(),
@@ -25,6 +26,7 @@ const productSchema = z.object({
 function mapProduct(row: Product): Product {
   return {
     ...row,
+    available: true,
     details: detailsSchema.parse(row.details ?? {}),
     cost_micros: row.cost_micros === null ? null : Number(row.cost_micros),
   };
@@ -40,6 +42,19 @@ export async function getCatalog(db: Database, admin = false): Promise<Product[]
 export async function saveProduct(db: Database, actor: Member, input: unknown): Promise<Product> {
   requireAdmin(actor);
   const p = productSchema.parse(input);
+  const classification = productCategories.find((c) => c.label === p.category);
+  if (classification) {
+    p.is_beverage = classification.beverage;
+    const [existing] =
+      p.id && !p.details
+        ? await db.query<{ details: unknown }>('SELECT details FROM products WHERE id=$1', [p.id])
+        : [];
+    p.details = {
+      ...detailsSchema.parse(p.details ?? existing?.details ?? {}),
+      kind: classification.kind,
+    };
+  } else if (p.category === 'Boissons') p.is_beverage = true;
+  p.available = true;
   assert(
     !p.image || p.image.startsWith('/products/') || /^https:\/\//.test(p.image),
     'Utilise une image locale de produit ou une adresse HTTPS.',

@@ -27,7 +27,14 @@ export type LedgerEntry = {
   label: string;
   voided: boolean;
   reason?: string;
-  lines?: { name: string; quantity: number; priceCents: number }[];
+  removableUntil?: string;
+  lines?: {
+    id: string;
+    name: string;
+    quantity: number;
+    removedQuantity: number;
+    priceCents: number;
+  }[];
 };
 export type AccountLedger = { balanceCents: number; entries: LedgerEntry[] };
 export type CheckoutReceipt = {

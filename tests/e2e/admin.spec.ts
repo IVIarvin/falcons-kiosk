@@ -12,9 +12,9 @@ test('crée un produit automatique, enregistre un achat et publie les prix sépa
   const name = `Produit QA ${Date.now()}`;
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox', { name: /^Nom\b/ }).fill(name);
-  await dialog.getByLabel('Prix de vente (CHF)', { exact: true }).fill('1.00');
+  await dialog.getByLabel('Prix de vente au kiosque (CHF)', { exact: false }).fill('1.00');
   await dialog.getByLabel('Mode de prix').selectOption('auto');
-  await dialog.getByLabel('Coût unitaire de référence (CHF)', { exact: false }).fill('1.000000');
+  await dialog.getByLabel('Prix d’achat par article (CHF)', { exact: false }).fill('1.000000');
   await dialog.getByRole('button', { name: 'Enregistrer le produit' }).click();
   await expect(dialog).not.toBeVisible();
   await page.getByRole('button', { name: 'Vérifier les prix' }).click();
@@ -28,7 +28,7 @@ test('crée un produit automatique, enregistre un achat et publie les prix sépa
     .getByRole('dialog')
     .getByRole('combobox', { name: 'Produit', exact: true })
     .selectOption(product.id);
-  await page.getByLabel('Total payé (CHF)').fill('48.00');
+  await page.getByLabel('Prix d’achat total payé (CHF)', { exact: false }).fill('48.00');
   await page.getByRole('dialog').getByRole('button', { name: 'Enregistrer', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   const after = (await (await page.request.get('/api/state')).json()).data;

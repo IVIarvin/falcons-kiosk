@@ -23,6 +23,7 @@ import {
   getFinancialSummary,
   recordPayment,
   reverseConsumption,
+  removeConsumptionLine,
   voidPayment,
   recordExpense,
   completeCosts,
@@ -82,7 +83,7 @@ export async function getSnapshot(db: Database, user: Member) {
               created_at: string;
               current_cost: string | null;
             }>(
-              'SELECT l.id,l.product_name,l.quantity,c.created_at,p.cost_micros AS current_cost FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id JOIN products p ON p.id=l.product_id WHERE l.cost_micros IS NULL AND c.reversed_at IS NULL ORDER BY c.created_at LIMIT 100',
+              'SELECT l.id,l.product_name,(l.quantity-l.removed_quantity) AS quantity,c.created_at,p.cost_micros AS current_cost FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id JOIN products p ON p.id=l.product_id WHERE l.cost_micros IS NULL AND l.quantity>l.removed_quantity AND c.reversed_at IS NULL ORDER BY c.created_at LIMIT 100',
             )
           ).map((l) => ({
             ...l,
@@ -140,6 +141,8 @@ export async function dispatch(
       return recordPayment(db, user, input);
     case 'reverseConsumption':
       return reverseConsumption(db, user, input);
+    case 'removeConsumptionLine':
+      return removeConsumptionLine(db, user, input);
     case 'voidPayment':
       return voidPayment(db, user, input);
     case 'expense':

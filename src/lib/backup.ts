@@ -54,6 +54,7 @@ const columns: Record<string, string[]> = {
     'reason',
   ],
   consumption_lines: [
+    'removed_quantity',
     'id',
     'consumption_id',
     'product_id',
@@ -63,6 +64,15 @@ const columns: Record<string, string[]> = {
     'price_cents',
     'cost_micros',
     'is_beverage',
+  ],
+  consumption_removals: [
+    'id',
+    'user_id',
+    'line_id',
+    'quantity',
+    'idempotency_key',
+    'request_hash',
+    'created_at',
   ],
   payments: [
     'id',
@@ -117,7 +127,8 @@ export async function restoreBackup(db: Database, input: unknown) {
   assert(backup.format === 'falcons-backup-v1' && backup.tables, 'Format de sauvegarde invalide.');
   for (const name of Object.keys(columns))
     assert(
-      (name === 'piller_quotes' && backup.tables[name] === undefined) ||
+      (['piller_quotes', 'consumption_removals'].includes(name) &&
+        backup.tables[name] === undefined) ||
         Array.isArray(backup.tables[name]),
       `Table absente : ${name}.`,
     );
@@ -129,7 +140,13 @@ export async function restoreBackup(db: Database, input: unknown) {
       assert(rows.length <= 500000, 'Sauvegarde trop volumineuse.');
       for (const row of rows) {
         const values = fields.map((field) => {
-          const value = row[field] ?? (name === 'products' && field === 'details' ? {} : null);
+          const value =
+            row[field] ??
+            (name === 'products' && field === 'details'
+              ? {}
+              : name === 'consumption_lines' && field === 'removed_quantity'
+                ? 0
+                : null);
           return (name === 'products' && field === 'details') ||
             (name === 'audit' &&
               (field === 'before_data' || field === 'after_data') &&

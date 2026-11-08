@@ -72,7 +72,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ kind: s
       });
     const tables: Record<string, string[]> = {
       achats: ['purchases'],
-      consommations: ['consumptions', 'consumption_lines'],
+      consommations: ['consumptions', 'consumption_lines', 'consumption_removals'],
       paiements: ['payments'],
     };
     assert(tables[kind], 'Document inconnu.');

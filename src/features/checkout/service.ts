@@ -67,7 +67,7 @@ export async function checkout(
       const [product] = await tx.query<Product>('SELECT * FROM products WHERE id=$1 FOR UPDATE', [
         line.productId,
       ]);
-      assert(product?.active && product.available, 'Un produit du panier est indisponible.');
+      assert(product?.active, 'Un produit du panier est indisponible.');
       assert(
         product.price_cents === line.expectedPriceCents,
         'Un prix a changé. Vérifie le panier et confirme le nouveau montant.',

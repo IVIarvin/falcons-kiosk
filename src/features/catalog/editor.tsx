@@ -4,17 +4,17 @@ import { Search } from 'lucide-react';
 import { useApp } from '@/components/context';
 import { Busy, Dialog, Field } from '@/components/ui';
 import { api } from '@/lib/client';
-import { centsFromInput, costMicrosFromInput } from '@/lib/money';
+import { centsFromInput, costMicrosFromInput, formatCHF } from '@/lib/money';
 import type { Product } from '@/lib/types';
 import {
   characteristicLabels,
   emptyDetails,
-  kindLabels,
   productSourceUrl,
   type ProductDetails,
   type ProductSuggestion,
 } from './details';
 import { ProductAttribution, ProductImage } from './image';
+import { categoryForProduct, productCategories } from './categories';
 
 export function ProductEditor({
   product: p,
@@ -25,10 +25,14 @@ export function ProductEditor({
 }) {
   const { run, busy, notice } = useApp();
   const [name, setName] = useState(p?.name ?? '');
-  const [unit, setUnit] = useState(p?.unit ?? '50 cl');
-  const [category, setCategory] = useState(p?.category ?? 'Boissons');
+  const [unit, setUnit] = useState(p?.unit ?? 'pièce');
+  const [category, setCategory] = useState(
+    p ? categoryForProduct(p.category, p.details.kind, p.is_beverage) : 'Autres boissons',
+  );
   const [image, setImage] = useState(p?.image ?? '');
-  const [beverage, setBeverage] = useState(p?.is_beverage ?? true);
+  const [price, setPrice] = useState(p ? (p.price_cents / 100).toFixed(2) : '');
+  const [cost, setCost] = useState(p?.cost_micros == null ? '' : String(p.cost_micros / 1000000));
+  const [priceMode, setPriceMode] = useState(p?.price_mode ?? 'manual');
   const [details, setDetails] = useState<ProductDetails>(p?.details ?? emptyDetails());
   const [results, setResults] = useState<ProductSuggestion[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -69,15 +73,12 @@ export function ProductEditor({
       const found = await api<ProductSuggestion>('lookupProduct', { code: result.code });
       if (request.current !== id) return;
       setName(found.name);
-      setUnit(found.unit || '');
-      setCategory(found.category);
-      setBeverage(found.is_beverage);
+      setUnit(found.unit || 'pièce');
+      setCategory(categoryForProduct(found.category, found.details.kind, found.is_beverage));
       setImage(found.image);
       setDetails(found.details);
       setResults(null);
-      setMessage(
-        'Référence récupérée. Vérifie le format vendu et les caractéristiques avant d’enregistrer.',
-      );
+      setMessage('Référence récupérée. Vérifie la variante, la catégorie et les caractéristiques.');
     } catch (e) {
       if (request.current === id) setError((e as Error).message);
     } finally {
@@ -94,14 +95,14 @@ export function ProductEditor({
         name,
         unit,
         category,
-        is_beverage: beverage,
+        is_beverage: classification.beverage,
         image,
-        details,
-        price_cents: centsFromInput(String(f.price)),
-        price_mode: String(f.price_mode),
-        cost_micros: f.cost ? costMicrosFromInput(String(f.cost)) : null,
+        details: { ...details, kind: classification.kind },
+        price_cents: centsFromInput(price),
+        price_mode: priceMode,
+        cost_micros: cost ? costMicrosFromInput(cost) : null,
         active: f.active === 'on',
-        available: f.available === 'on',
+        available: true,
       });
       notice('Produit enregistré.');
       onClose();
@@ -118,6 +119,16 @@ export function ProductEditor({
     }));
   }
   const locked = busy || selecting;
+  const classification = productCategories.find((c) => c.label === category)!;
+  const priceNumber = Number(price.replace(',', '.'));
+  const costNumber = Number(cost.replace(',', '.'));
+  const validDelta =
+    price.trim() &&
+    cost.trim() &&
+    Number.isFinite(priceNumber) &&
+    Number.isFinite(costNumber) &&
+    priceNumber >= 0 &&
+    costNumber >= 0;
   return (
     <Dialog
       title={p ? 'Modifier le produit' : 'Nouveau produit'}
@@ -242,69 +253,88 @@ export function ProductEditor({
           </div>
         )}
         <fieldset disabled={locked} className="product-fields">
-          <div className="form-grid">
-            <Field label="Unité de vente" hint="Vérifie qu’il s’agit d’une unité, pas d’un pack.">
-              <input
-                name="unit"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                required
-                maxLength={40}
-              />
-            </Field>
-            <Field label="Catégorie">
-              <input
-                name="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                required
-                maxLength={40}
-              />
-            </Field>
-          </div>
-          <div className="form-grid">
-            <Field label="Prix de vente (CHF)">
-              <input
-                name="price"
-                inputMode="decimal"
-                defaultValue={p ? (p.price_cents / 100).toFixed(2) : ''}
-                required
-              />
-            </Field>
+          <Field label="Catégorie">
+            <select
+              aria-label="Catégorie"
+              name="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              {productCategories.map((c) => (
+                <option key={c.label}>{c.label}</option>
+              ))}
+            </select>
+          </Field>
+          <p className="muted product-classification">
+            {classification.beverage ? 'Boisson' : 'Aliment ou autre article'} · type déterminé par
+            la catégorie.
+          </p>
+          <section className="product-pricing" aria-label="Achat et vente">
+            <h3>Achat et vente</h3>
+            <p>Les montants ci-dessous concernent un seul article.</p>
+            <div className="form-grid">
+              <Field
+                label="Prix d’achat par article (CHF)"
+                hint="Ce que le kiosque paie. Les ravitaillements mettront ce montant à jour."
+              >
+                <input
+                  name="cost"
+                  inputMode="decimal"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value)}
+                  required={priceMode === 'auto'}
+                />
+              </Field>
+              <Field
+                label="Prix de vente au kiosque (CHF)"
+                hint="Ce que le membre paie pour cet article."
+              >
+                <input
+                  name="price"
+                  inputMode="decimal"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                />
+              </Field>
+            </div>
+            <div className="price-delta" role="status" aria-label="Écart par article">
+              <span>Écart vente − achat</span>
+              <strong className={validDelta && priceNumber < costNumber ? 'danger-text' : ''}>
+                {validDelta
+                  ? formatCHF(Math.round((priceNumber - costNumber) * 100))
+                  : 'À renseigner'}
+              </strong>
+              <small>
+                {validDelta
+                  ? 'Marge brute estimée par article, avant les autres dépenses.'
+                  : 'Renseigne les deux prix pour voir la marge par article.'}
+              </small>
+            </div>
             <Field label="Mode de prix">
-              <select name="price_mode" defaultValue={p?.price_mode ?? 'manual'}>
-                <option value="manual">Manuel</option>
-                <option value="auto">Coût + majoration</option>
+              <select
+                name="price_mode"
+                value={priceMode}
+                onChange={(e) => setPriceMode(e.target.value as 'manual' | 'auto')}
+              >
+                <option value="manual">Prix de vente fixe</option>
+                <option value="auto">Proposer achat + majoration</option>
               </select>
             </Field>
-          </div>
-          <Field
-            label="Coût unitaire de référence (CHF)"
-            hint="Facultatif en prix manuel. Les prochains achats mettront à jour ce coût."
-          >
-            <input
-              name="cost"
-              inputMode="decimal"
-              defaultValue={p?.cost_micros == null ? '' : (p.cost_micros / 1000000).toFixed(6)}
-            />
-          </Field>
+            {priceMode === 'auto' && (
+              <p className="muted">
+                Les prochains prix seront proposés selon la majoration des réglages. Tu devras les
+                confirmer avant publication.
+              </p>
+            )}
+            <p className="muted">
+              Pour comptabiliser un ravitaillement, utilise « Achats » : nombre d’articles et total
+              payé.
+            </p>
+          </section>
           <section className="product-characteristics" aria-label="Caractéristiques du produit">
             <h3>Caractéristiques</h3>
             <p>Vérifie ces informations sur l’emballage. Piller s’en sert pour ses répliques.</p>
-            <Field label="Type de produit">
-              <select
-                value={details.kind}
-                onChange={(e) =>
-                  setDetails((old) => ({ ...old, kind: e.target.value as ProductDetails['kind'] }))
-                }
-              >
-                {Object.entries(kindLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </Field>
             <div className="form-grid">
               {(
                 [
@@ -374,19 +404,6 @@ export function ProductEditor({
             </div>
           </div>
           <div className="checkboxes">
-            <label>
-              <input
-                name="is_beverage"
-                type="checkbox"
-                checked={beverage}
-                onChange={(e) => setBeverage(e.target.checked)}
-              />{' '}
-              C’est une boisson
-            </label>
-            <label>
-              <input name="available" type="checkbox" defaultChecked={p?.available ?? true} />{' '}
-              Disponible au kiosque
-            </label>
             <label>
               <input name="active" type="checkbox" defaultChecked={p?.active ?? true} /> Visible
               dans le catalogue

@@ -347,7 +347,8 @@ function Products() {
               <tr>
                 <th>Produit</th>
                 <th>Prix de vente</th>
-                <th>Coût de référence</th>
+                <th>Prix d’achat / article</th>
+                <th>Écart / article</th>
                 <th>État</th>
                 <th />
               </tr>
@@ -375,8 +376,13 @@ function Products() {
                     {p.cost_micros === null ? 'Non renseigné' : formatCHF(p.cost_micros / 10000)}
                   </td>
                   <td>
-                    <span className={`status ${p.active && p.available ? 'positive' : ''}`}>
-                      {!p.active ? 'Désactivé' : p.available ? 'Disponible' : 'Indisponible'}
+                    {p.cost_micros === null
+                      ? 'À renseigner'
+                      : formatCHF(p.price_cents - p.cost_micros / 10000)}
+                  </td>
+                  <td>
+                    <span className={`status ${p.active ? 'positive' : ''}`}>
+                      {!p.active ? 'Désactivé' : 'Au catalogue'}
                     </span>
                   </td>
                   <td>
@@ -449,6 +455,20 @@ function Purchases() {
   const [open, setOpen] = useState(false);
   const [correction, setCorrection] = useState<ProcurementRow | null>(null);
   const [working, setWorking] = useState(false);
+  const [draftQuantity, setDraftQuantity] = useState('24');
+  const [draftTotal, setDraftTotal] = useState('');
+  const [draftProductId, setDraftProductId] = useState(state.products[0]?.id ?? '');
+  const draftProduct = state.products.find((p) => p.id === draftProductId);
+  const totalPaid = Number(draftTotal.replace(',', '.'));
+  const articleCount = Number(draftQuantity);
+  const paidPerArticle =
+    draftTotal.trim() &&
+    totalPaid >= 0 &&
+    Number.isFinite(totalPaid) &&
+    articleCount > 0 &&
+    Number.isInteger(articleCount)
+      ? totalPaid / articleCount
+      : null;
   const pending = pendingAction('purchase', state.user.id);
   async function save(e?: FormEvent<HTMLFormElement>) {
     e?.preventDefault();
@@ -484,7 +504,12 @@ function Purchases() {
         <button
           className="button primary"
           disabled={!state.products.length || working || !!pending}
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setDraftQuantity('24');
+            setDraftTotal('');
+            setDraftProductId(state.products[0]?.id ?? '');
+            setOpen(true);
+          }}
         >
           <Plus size={18} /> Enregistrer un achat
         </button>
@@ -527,6 +552,9 @@ function Purchases() {
                       aria-label={`Corriger l’achat ${p.product_name}`}
                       onClick={() => {
                         setCorrection(p);
+                        setDraftQuantity(String(p.quantity));
+                        setDraftTotal((p.total_cents / 100).toFixed(2));
+                        setDraftProductId(p.product_id);
                         setOpen(true);
                       }}
                     >
@@ -552,7 +580,8 @@ function Purchases() {
             <Field label="Produit">
               <select
                 name="productId"
-                defaultValue={correction?.product_id}
+                value={draftProductId}
+                onChange={(e) => setDraftProductId(e.target.value)}
                 required
                 aria-readonly={!!correction}
               >
@@ -566,24 +595,53 @@ function Purchases() {
               </select>
             </Field>
             <div className="form-grid">
-              <Field label="Nombre d’unités vendables" hint="2 packs de 24 = 48 unités.">
+              <Field
+                label="Nombre d’articles achetés"
+                hint="2 packs de 24 = 48 articles vendus séparément."
+              >
                 <input
                   name="quantity"
                   type="number"
                   min="1"
                   max="100000"
-                  defaultValue={correction?.quantity ?? 24}
+                  value={draftQuantity}
+                  onChange={(e) => setDraftQuantity(e.target.value)}
                   required
                 />
               </Field>
-              <Field label="Total payé (CHF)">
+              <Field
+                label="Prix d’achat total payé (CHF)"
+                hint="Le montant payé au fournisseur pour tous les articles, pas le prix de vente."
+              >
                 <input
                   name="total"
                   inputMode="decimal"
-                  defaultValue={correction ? (correction.total_cents / 100).toFixed(2) : ''}
+                  value={draftTotal}
+                  onChange={(e) => setDraftTotal(e.target.value)}
                   required
                 />
               </Field>
+            </div>
+            <div className="price-delta" role="status" aria-label="Coût du ravitaillement">
+              <span>Prix payé par article</span>
+              <strong>
+                {paidPerArticle === null ? 'À renseigner' : formatCHF(paidPerArticle * 100)}
+              </strong>
+              {draftProduct && (
+                <>
+                  <span>Vente actuelle au kiosque</span>
+                  <strong>{formatCHF(draftProduct.price_cents)}</strong>
+                </>
+              )}
+              {draftProduct && paidPerArticle !== null && (
+                <>
+                  <span>Écart par article</span>
+                  <strong>{formatCHF(draftProduct.price_cents - paidPerArticle * 100)}</strong>
+                </>
+              )}
+              <small>
+                Le prix de vente reste inchangé tant qu’un nouveau tarif n’a pas été confirmé.
+              </small>
             </div>
             <Field label="Date d’achat">
               <input
@@ -626,6 +684,14 @@ function Settings() {
   return (
     <>
       <PageTitle title="Réglages" subtitle="Les règles du kiosque et la voix de la section." />
+      <div className="admin-more-links">
+        <Link className="button secondary" href="/admin/finance">
+          Suivi financier <ArrowUpRight size={16} />
+        </Link>
+        <Link className="button secondary" href="/admin/documents">
+          Documents et exports <ArrowUpRight size={16} />
+        </Link>
+      </div>
       <div className="profile-layout">
         <section className="form-panel">
           <h2>Prix et commentaires</h2>
@@ -661,8 +727,8 @@ function Settings() {
         </section>
         <section className="form-panel">
           <Users size={28} className="accent" />
-          <h2>La section</h2>
-          <p>Gère les comptes, les accès responsables et les récupérations de mot de passe.</p>
+          <h2>Membres et admins</h2>
+          <p>Ajoute ou retire un administrateur parmi les membres inscrits, et gère les accès.</p>
           <Link className="button secondary" href="/admin/section">
             Gérer les membres <ArrowUpRight size={16} />
           </Link>
@@ -687,9 +753,7 @@ function Documents() {
           <FileText size={28} />
           <div>
             <h2>Catalogue du kiosque</h2>
-            <p>
-              Produits actifs, unités, prix et indisponibilités. PDF A4 adapté au noir et blanc.
-            </p>
+            <p>Produits du catalogue et prix de vente. PDF A4 adapté au noir et blanc.</p>
           </div>
           <DownloadLink href={doc('catalogue')}>Télécharger le PDF</DownloadLink>
         </article>
@@ -769,8 +833,8 @@ function Members() {
   return (
     <>
       <PageTitle
-        title="La section"
-        subtitle="Les inscriptions restent autonomes. Les accès se gèrent ici."
+        title="Membres et admins"
+        subtitle="Choisis un membre, puis Gérer pour lui donner ou retirer l’accès administrateur."
       />
       <div className="search-field">
         <Search size={18} />
@@ -782,7 +846,7 @@ function Members() {
         />
       </div>
       <div className="table-wrap">
-        <table>
+        <table className="members-table">
           <thead>
             <tr>
               <th>Membre</th>
@@ -805,7 +869,7 @@ function Members() {
                   </td>
                   <td>{a.phone}</td>
                   <td>
-                    {a.role === 'admin' ? 'Responsable' : 'Membre'}
+                    {a.role === 'admin' ? 'Administrateur' : 'Membre'}
                     <small>{a.active ? 'Actif' : 'Désactivé'}</small>
                   </td>
                   <td>
@@ -845,10 +909,13 @@ function Members() {
             <Field label="Téléphone">
               <input name="phone" type="tel" defaultValue={edit.phone} required />
             </Field>
-            <Field label="Rôle">
+            <Field
+              label="Rôle"
+              hint="Administrateur : gère les produits, les ardoises et les autres admins. Membre : retire cet accès en conservant son compte."
+            >
               <select name="role" defaultValue={edit.role}>
                 <option value="member">Membre</option>
-                <option value="admin">Responsable</option>
+                <option value="admin">Administrateur</option>
               </select>
             </Field>
             <label className="check-line">

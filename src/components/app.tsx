@@ -38,7 +38,8 @@ const adminLinks = [
   { href: '/admin', label: 'Ardoises', Icon: LayoutGrid },
   { href: '/admin/produits', label: 'Produits', Icon: Package },
   { href: '/admin/achats', label: 'Achats', Icon: ClipboardList },
-  { href: '/admin/finance', label: 'Suivi financier', Icon: ChartNoAxesCombined },
+  { href: '/admin/finance', label: 'Finances', Icon: ChartNoAxesCombined },
+  { href: '/admin/section', label: 'Membres', Icon: Users },
   { href: '/admin/documents', label: 'Documents', Icon: FileText },
   { href: '/admin/reglages', label: 'Réglages', Icon: Settings },
 ];
@@ -236,9 +237,21 @@ export function App({ demo = false }: { demo?: boolean }) {
           <Link href="/">
             <Logo />
           </Link>
-          <Link className="mobile-avatar" href="/profil" aria-label="Mon profil">
-            {state.user.name[0]}
-          </Link>
+          <div className="mobile-header-actions">
+            {state.user.role === 'admin' && (
+              <Link
+                className="mobile-admin-link"
+                href={admin ? '/' : '/admin'}
+                aria-label={admin ? 'Retour au kiosque' : 'Administration'}
+              >
+                {admin ? <ShoppingCart size={17} /> : <Settings size={17} />}
+                {admin ? 'Kiosque' : 'Admin'}
+              </Link>
+            )}
+            <Link className="mobile-avatar" href="/profil" aria-label="Mon profil">
+              {state.user.name[0]}
+            </Link>
+          </div>
         </div>
         <main className={`workspace ${admin ? 'wide' : ''}`}>
           {demo && <div className="demo-banner">Démonstration locale · données fictives</div>}
@@ -279,10 +292,15 @@ export function App({ demo = false }: { demo?: boolean }) {
           className={`mobile-nav ${admin ? 'admin-mobile-nav' : ''}`}
           aria-label="Navigation mobile"
         >
-          {(admin ? adminLinks : memberLinks).map(({ href, label, Icon }) => (
+          {(admin
+            ? adminLinks.filter(
+                (link) => !['/admin/finance', '/admin/documents'].includes(link.href),
+              )
+            : memberLinks
+          ).map(({ href, label, Icon }) => (
             <Link key={href} href={href} className={pathname === href ? 'active' : ''}>
               <Icon size={23} />
-              <span>{label}</span>
+              <span>{href === '/admin/reglages' ? 'Plus' : label}</span>
             </Link>
           ))}
         </nav>

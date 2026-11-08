@@ -24,7 +24,7 @@ test('retrouve achats et dépenses après réponse perdue et annule une dépense
     .getByRole('dialog')
     .getByRole('combobox', { name: 'Produit', exact: true })
     .selectOption(product.id);
-  await page.getByLabel('Total payé (CHF)').fill('24.00');
+  await page.getByLabel('Prix d’achat total payé (CHF)', { exact: false }).fill('24.00');
   await lose('purchase');
   await page.getByRole('dialog').getByRole('button', { name: 'Enregistrer', exact: true }).click();
   await expect(page.getByText('Connexion interrompue.', { exact: false })).toBeVisible();

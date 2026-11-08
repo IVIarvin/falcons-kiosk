@@ -9,7 +9,7 @@ export const requestHash = (data: unknown) =>
   createHash('sha256').update(JSON.stringify(data)).digest('hex');
 export async function balance(db: Database, userId: string): Promise<number> {
   const [row] = await db.query<{ value: string | number }>(
-    `SELECT COALESCE((SELECT sum(total_cents) FROM consumptions WHERE user_id=$1 AND reversed_at IS NULL),0)-COALESCE((SELECT sum(CASE WHEN kind='payment' THEN cents ELSE -cents END) FROM payments WHERE user_id=$1 AND voided_at IS NULL),0) AS value`,
+    `SELECT COALESCE((SELECT sum((l.quantity-l.removed_quantity)*l.price_cents) FROM consumptions c JOIN consumption_lines l ON l.consumption_id=c.id WHERE c.user_id=$1 AND c.reversed_at IS NULL),0)-COALESCE((SELECT sum(CASE WHEN kind='payment' THEN cents ELSE -cents END) FROM payments WHERE user_id=$1 AND voided_at IS NULL),0) AS value`,
     [userId],
   );
   return Number(row.value);
@@ -36,9 +36,11 @@ export async function getAccountLedger(
     [userId],
   );
   const lines = await db.query<{
+    id: string;
     consumption_id: string;
     product_name: string;
     quantity: number;
+    removed_quantity: number;
     price_cents: number;
   }>(
     'SELECT l.* FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id WHERE c.user_id=$1',
@@ -56,14 +58,23 @@ export async function getAccountLedger(
     ...purchases.map((p) => ({
       id: p.id,
       kind: 'consumption' as const,
-      cents: p.total_cents,
+      cents: lines
+        .filter((l) => l.consumption_id === p.id)
+        .reduce((total, l) => total + (l.quantity - l.removed_quantity) * l.price_cents, 0),
       at: new Date(p.created_at).toISOString(),
       label: 'Consommation',
       voided: !!p.reversed_at,
+      removableUntil: new Date(new Date(p.created_at).getTime() + 600000).toISOString(),
       reason: p.reason ?? undefined,
       lines: lines
         .filter((l) => l.consumption_id === p.id)
-        .map((l) => ({ name: l.product_name, quantity: l.quantity, priceCents: l.price_cents })),
+        .map((l) => ({
+          id: l.id,
+          name: l.product_name,
+          quantity: l.quantity,
+          removedQuantity: l.removed_quantity,
+          priceCents: l.price_cents,
+        })),
     })),
     ...payments.map((p) => ({
       id: p.id,
@@ -80,7 +91,7 @@ export async function getAccountLedger(
 export async function getAccounts(db: Database, actor: Member) {
   requireAdmin(actor);
   const members = await db.query<Member & { balance: string }>(
-    `SELECT u.id,u.name,u.grade,u.phone,u.role,u.active,u.must_change_password,COALESCE(c.total,0)-COALESCE(p.total,0) AS balance FROM users u LEFT JOIN (SELECT user_id,sum(total_cents) AS total FROM consumptions WHERE reversed_at IS NULL GROUP BY user_id) c ON c.user_id=u.id LEFT JOIN (SELECT user_id,sum(CASE WHEN kind='payment' THEN cents ELSE -cents END) AS total FROM payments WHERE voided_at IS NULL GROUP BY user_id) p ON p.user_id=u.id ORDER BY u.name`,
+    `SELECT u.id,u.name,u.grade,u.phone,u.role,u.active,u.must_change_password,COALESCE(c.total,0)-COALESCE(p.total,0) AS balance FROM users u LEFT JOIN (SELECT c.user_id,sum((l.quantity-l.removed_quantity)*l.price_cents) AS total FROM consumptions c JOIN consumption_lines l ON l.consumption_id=c.id WHERE c.reversed_at IS NULL GROUP BY c.user_id) c ON c.user_id=u.id LEFT JOIN (SELECT user_id,sum(CASE WHEN kind='payment' THEN cents ELSE -cents END) AS total FROM payments WHERE voided_at IS NULL GROUP BY user_id) p ON p.user_id=u.id ORDER BY u.name`,
   );
   return members.map(({ balance: due, ...m }) => ({ ...m, balanceCents: Number(due) }));
 }
@@ -133,6 +144,75 @@ export async function recordPayment(db: Database, actor: Member, input: unknown)
         p.idempotencyKey,
         hash,
         p.receivedAt ?? new Date().toISOString(),
+      ],
+    );
+    return { id };
+  });
+}
+export async function removeConsumptionLine(db: Database, actor: Member, input: unknown) {
+  const p = z
+    .object({
+      lineId: z.string().min(1),
+      quantity: z.number().int().min(1).max(1000),
+      idempotencyKey: z.string().min(1).max(100),
+    })
+    .parse(input);
+  const hash = requestHash({ lineId: p.lineId, quantity: p.quantity });
+  return db.transaction(async (tx) => {
+    // Same lock order as checkout, payments and admin corrections.
+    await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [actor.id]);
+    const [existing] = await tx.query<{ id: string; request_hash: string }>(
+      'SELECT id,request_hash FROM consumption_removals WHERE user_id=$1 AND idempotency_key=$2',
+      [actor.id, p.idempotencyKey],
+    );
+    if (existing) {
+      assert(existing.request_hash === hash, 'Cette confirmation correspond à un autre retrait.');
+      return { id: existing.id };
+    }
+    const [line] = await tx.query<{
+      user_id: string;
+      quantity: number;
+      removed_quantity: number;
+      reversed_at: string | null;
+      within_deadline: boolean;
+    }>(
+      `SELECT c.user_id,l.quantity,l.removed_quantity,c.reversed_at,c.created_at+interval '10 minutes'>clock_timestamp() AS within_deadline FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id WHERE l.id=$1 FOR UPDATE OF l`,
+      [p.lineId],
+    );
+    assert(
+      line && line.user_id === actor.id,
+      'Accès à cette consommation refusé.',
+      'FORBIDDEN',
+      403,
+    );
+    assert(!line.reversed_at, 'Cette consommation est déjà annulée.');
+    assert(
+      line.within_deadline,
+      'Les 10 minutes sont écoulées. Demande une correction à un administrateur.',
+    );
+    assert(
+      p.quantity <= line.quantity - line.removed_quantity,
+      'Cette quantité a déjà été retirée de ton ardoise.',
+    );
+    const id = randomUUID();
+    await tx.query(
+      'UPDATE consumption_lines SET removed_quantity=removed_quantity+$2 WHERE id=$1',
+      [p.lineId, p.quantity],
+    );
+    await tx.query(
+      'INSERT INTO consumption_removals(id,user_id,line_id,quantity,idempotency_key,request_hash) VALUES($1,$2,$3,$4,$5,$6)',
+      [id, actor.id, p.lineId, p.quantity, p.idempotencyKey, hash],
+    );
+    await tx.query(
+      'INSERT INTO audit(id,actor_id,action,reference_id,reason,before_data,after_data) VALUES($1,$2,$3,$4,$5,$6,$7)',
+      [
+        randomUUID(),
+        actor.id,
+        'self-remove',
+        p.lineId,
+        'Article non pris — retrait dans les 10 minutes',
+        JSON.stringify({ removed_quantity: line.removed_quantity }),
+        JSON.stringify({ removed_quantity: line.removed_quantity + p.quantity }),
       ],
     );
     return { id };
@@ -266,7 +346,7 @@ export async function getFinancialSummary(
 ): Promise<FinancialSummary> {
   requireAdmin(actor);
   const [sales] = await db.query<{ sales: string; covered: string; cost: string; unknown: string }>(
-    `SELECT COALESCE(sum(l.quantity*l.price_cents),0) AS sales,COALESCE(sum(CASE WHEN l.cost_micros IS NOT NULL THEN l.quantity*l.price_cents ELSE 0 END),0) AS covered,COALESCE(sum(l.quantity*l.cost_micros),0) AS cost,COALESCE(sum(CASE WHEN l.cost_micros IS NULL THEN l.quantity*l.price_cents ELSE 0 END),0) AS unknown FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id WHERE c.reversed_at IS NULL AND c.created_at >= $1 AND c.created_at < $2`,
+    `SELECT COALESCE(sum((l.quantity-l.removed_quantity)*l.price_cents),0) AS sales,COALESCE(sum(CASE WHEN l.cost_micros IS NOT NULL THEN (l.quantity-l.removed_quantity)*l.price_cents ELSE 0 END),0) AS covered,COALESCE(sum((l.quantity-l.removed_quantity)*l.cost_micros),0) AS cost,COALESCE(sum(CASE WHEN l.cost_micros IS NULL THEN (l.quantity-l.removed_quantity)*l.price_cents ELSE 0 END),0) AS unknown FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id WHERE c.reversed_at IS NULL AND c.created_at >= $1 AND c.created_at < $2`,
     [from, to],
   );
   const [purchases] = await db.query<{ value: string }>(

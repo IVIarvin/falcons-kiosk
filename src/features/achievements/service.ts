@@ -70,7 +70,7 @@ export async function getCommunity(
     drinks: string;
     week: string;
   }>(
-    `SELECT u.id,u.name,u.grade,COALESCE(sum(l.quantity*l.price_cents),0) AS amount,COALESCE(sum(CASE WHEN l.is_beverage THEN l.quantity ELSE 0 END),0) AS drinks,date_trunc('week',c.created_at AT TIME ZONE 'Europe/Zurich')::date::text AS week FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id JOIN users u ON u.id=c.user_id WHERE c.reversed_at IS NULL GROUP BY u.id,u.name,u.grade,week`,
+    `SELECT u.id,u.name,u.grade,COALESCE(sum((l.quantity-l.removed_quantity)*l.price_cents),0) AS amount,COALESCE(sum(CASE WHEN l.is_beverage THEN l.quantity-l.removed_quantity ELSE 0 END),0) AS drinks,date_trunc('week',c.created_at AT TIME ZONE 'Europe/Zurich')::date::text AS week FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id JOIN users u ON u.id=c.user_id WHERE c.reversed_at IS NULL AND l.quantity>l.removed_quantity GROUP BY u.id,u.name,u.grade,week`,
   );
   const localParts = parts(start);
   const weekKey = `${localParts.year}-${String(localParts.month).padStart(2, '0')}-${String(localParts.day).padStart(2, '0')}`;
