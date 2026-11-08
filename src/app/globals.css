@@ -13,6 +13,9 @@
   --heading: 'Rajdhani', sans-serif;
   --body: 'Barlow', sans-serif;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-press: 120ms;
+  --motion-feedback: 180ms;
+  --motion-dialog: 220ms;
 }
 * {
   box-sizing: border-box;
@@ -115,10 +118,15 @@ button {
   transition:
     background 0.2s var(--ease),
     color 0.2s var(--ease),
-    border-color 0.2s var(--ease);
+    border-color 0.2s var(--ease),
+    transform var(--motion-press) var(--ease);
 }
-button:active:not(:disabled) {
-  transform: translateY(1px);
+button:active:not(:disabled):not(:focus-visible) {
+  transform: scale(0.98);
+}
+button:focus-visible,
+a:focus-visible {
+  transition: none;
 }
 .muted {
   color: var(--muted);
@@ -391,7 +399,11 @@ button:active:not(:disabled) {
   position: fixed;
   bottom: 24px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, 0);
+  opacity: 1;
+  transition:
+    opacity var(--motion-feedback) var(--ease),
+    transform var(--motion-feedback) var(--ease);
   max-width: calc(100% - 32px);
   width: max-content;
   z-index: 1000;
@@ -614,6 +626,8 @@ button:active:not(:disabled) {
   font: 600 25px var(--heading);
 }
 .receipt-panel {
+  opacity: 1;
+  transition: opacity var(--motion-feedback) var(--ease);
   margin-top: 24px;
   padding: 24px;
   border: 1px solid var(--accent);
@@ -1054,6 +1068,12 @@ input[type='date'] {
   overflow-wrap: anywhere;
 }
 .dialog {
+  opacity: 1;
+  transform: scale(1);
+  transform-origin: center;
+  transition:
+    opacity var(--motion-dialog) var(--ease),
+    transform var(--motion-dialog) var(--ease);
   width: min(620px, calc(100% - 32px));
   max-height: calc(100dvh - 48px);
   border: 1px solid #536c55;
@@ -1065,8 +1085,30 @@ input[type='date'] {
   overflow-y: auto;
 }
 .dialog::backdrop {
+  opacity: 1;
+  transition: opacity var(--motion-dialog) var(--ease);
   background: #000b;
   backdrop-filter: blur(3px);
+}
+.dialog:has(:focus-visible),
+.dialog:has(:focus-visible)::backdrop,
+:root:has(:focus-visible) .toast,
+:root:has(:focus-visible) .receipt-panel {
+  transition: none;
+}
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  .dialog[open]::backdrop,
+  .receipt-panel {
+    opacity: 0;
+  }
+  .toast {
+    opacity: 0;
+    transform: translate(-50%, 12%);
+  }
 }
 .dialog-heading {
   display: flex;
@@ -2405,5 +2447,25 @@ input[type='date'] {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+  .dialog,
+  .dialog::backdrop,
+  .toast,
+  .receipt-panel {
+    transition-property: opacity !important;
+    transition-duration: var(--motion-press) !important;
+  }
+  .dialog,
+  button:active:not(:disabled) {
+    transform: none !important;
+  }
+  .toast {
+    transform: translateX(-50%) !important;
+  }
+  .dialog:has(:focus-visible),
+  .dialog:has(:focus-visible)::backdrop,
+  :root:has(:focus-visible) .toast,
+  :root:has(:focus-visible) .receipt-panel {
+    transition: none !important;
   }
 }
