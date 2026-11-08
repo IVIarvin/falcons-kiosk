@@ -1,0 +1,14 @@
+.git/
+.vercel/
+.next/
+node_modules/
+.data/
+.env*
+.impeccable/
+.superpowers/
+test-results/
+playwright-report/
+tests/
+scripts/
+docs/
+*.tsbuildinfo
