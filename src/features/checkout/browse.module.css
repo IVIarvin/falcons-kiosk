@@ -1,6 +1,38 @@
 .search {
   margin-bottom: 12px;
 }
+.searchTools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.searchTools .search {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.favoriteFilter {
+  min-height: 48px;
+  padding-inline: 12px;
+}
+.favoriteFilter[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.card {
+  position: relative;
+}
+:global(.basket-bar) > .summary {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.clear {
+  min-height: 44px;
+  padding-inline: 8px;
+}
 .filters {
   margin-top: 0;
 }

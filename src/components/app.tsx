@@ -12,6 +12,7 @@ import {
   ClipboardList,
   FileText,
   Settings,
+  Database,
   ChartNoAxesCombined,
   ArrowLeft,
   RefreshCw,
@@ -45,6 +46,7 @@ const adminLinks = [
   { href: '/admin/patchs', label: 'Patchs', Icon: Shield },
   { href: '/admin/section', label: 'Membres', Icon: Users },
   { href: '/admin/documents', label: 'Documents', Icon: FileText },
+  { href: '/admin/donnees', label: 'Données', Icon: Database },
   { href: '/admin/reglages', label: 'Réglages', Icon: Settings },
 ];
 const adminMobilePaths = [

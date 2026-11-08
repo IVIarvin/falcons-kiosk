@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Minus, Check, ArrowRight, ShoppingBag, RefreshCw, Search } from 'lucide-react';
+import { Plus, Minus, Check, ArrowRight, ShoppingBag, RefreshCw, Search, Star } from 'lucide-react';
 import { useApp } from '@/components/context';
 import { Empty, Busy, PageTitle } from '@/components/ui';
 import { formatCHF } from '@/lib/money';
@@ -13,10 +13,13 @@ import { matchesProductSearch } from '@/features/catalog/browse';
 import { productCategories } from '@/features/catalog/categories';
 import styles from './browse.module.css';
 import { FreeEntryButton } from '@/features/free-entry/view';
+import { FavoriteButton, useProductFavorites } from './favorites';
 export function KioskView() {
   const { state, refresh, notice } = useApp();
   const [category, setCategory] = useState('Tout');
   const [search, setSearch] = useState('');
+  const { ids: favorites, toggle: toggleFavorite } = useProductFavorites(state.user.id);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [cart, setCart] = useState<Record<string, number>>(() => {
     try {
       return JSON.parse(sessionStorage.getItem(`falcons_cart_${state.user.id}`) ?? '{}');
@@ -89,8 +92,12 @@ export function KioskView() {
     ...productCategories.filter((c) => products.some((p) => p.category === c.label)),
   ];
   const visible = products.filter(
-    (p) => (category === 'Tout' || p.category === category) && matchesProductSearch(p, search),
+    (p) =>
+      (!favoritesOnly || favorites.has(p.id)) &&
+      (category === 'Tout' || p.category === category) &&
+      matchesProductSearch(p, search),
   );
+  const favoriteCount = products.filter((p) => favorites.has(p.id)).length;
   const photoCredits = visible.filter((p) => p.image && p.details.source?.image === p.image);
   return (
     <>
@@ -101,16 +108,28 @@ export function KioskView() {
         <strong>{formatCHF(state.ledger.balanceCents)}</strong>
         <ArrowRight size={20} />
       </Link>
-      <div className={`search-field ${styles.search}`}>
-        <Search size={19} aria-hidden="true" />
-        <input
-          type="search"
-          inputMode="search"
-          aria-label="Rechercher un produit"
-          placeholder="Coca, chips…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className={styles.searchTools}>
+        <div className={`search-field ${styles.search}`}>
+          <Search size={19} aria-hidden="true" />
+          <input
+            type="search"
+            inputMode="search"
+            aria-label="Rechercher un produit"
+            placeholder="Coca, chips…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        {(favoriteCount > 0 || favoritesOnly) && (
+          <button
+            className={`button secondary ${styles.favoriteFilter}`}
+            aria-pressed={favoritesOnly}
+            onClick={() => setFavoritesOnly((v) => !v)}
+          >
+            <Star size={17} />
+            Favoris
+          </button>
+        )}
       </div>
       <div className={`category-tabs ${styles.filters}`} role="group" aria-label="Catégories">
         {categories.map((c) => (
@@ -149,6 +168,7 @@ export function KioskView() {
             onClick={() => {
               setSearch('');
               setCategory('Tout');
+              setFavoritesOnly(false);
             }}
           >
             Tout afficher
@@ -157,7 +177,12 @@ export function KioskView() {
       ) : (
         <div className="product-grid">
           {visible.map((p) => (
-            <article key={p.id} className="product-card">
+            <article key={p.id} className={`product-card ${styles.card}`}>
+              <FavoriteButton
+                name={p.name}
+                selected={favorites.has(p.id)}
+                onClick={() => toggleFavorite(p.id)}
+              />
               <div className="product-image">
                 <ProductImage src={p.image} name={p.name} />
               </div>
@@ -235,11 +260,22 @@ export function KioskView() {
         count > 0 &&
         !pending && (
           <div className="basket-bar">
-            <div>
+            <div className={styles.summary}>
               <strong>
                 {count} article{count > 1 ? 's' : ''}
               </strong>
               <span>{formatCHF(total)}</span>
+              <button
+                className={`text-button ${styles.clear}`}
+                aria-label="Vider le panier"
+                disabled={working || pending}
+                onClick={() => {
+                  setCart({});
+                  notice('Panier vidé.');
+                }}
+              >
+                Vider
+              </button>
             </div>
             <button className="button primary" disabled={working} onClick={() => void confirm()}>
               {working ? (

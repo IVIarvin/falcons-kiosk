@@ -126,6 +126,21 @@ export async function logout(db: Database, token: string) {
 export function requireAdmin(user: Member) {
   assert(user.role === 'admin', 'Accès réservé au responsable.', 'FORBIDDEN', 403);
 }
+export async function verifyAdminPassword(db: Database, actor: Member, password: string) {
+  requireAdmin(actor);
+  await throttle(db, `admin-reset:${actor.id}`);
+  const [user] = await db.query<Member & { password_hash: string }>(
+    'SELECT role,active,password_hash FROM users WHERE id=$1',
+    [actor.id],
+  );
+  assert(user?.active && user.role === 'admin', 'Accès administrateur requis.', 'FORBIDDEN', 403);
+  assert(
+    await passwordMatches(password, user.password_hash),
+    'Mot de passe actuel incorrect.',
+    'PASSWORD_CONFIRM',
+    403,
+  );
+}
 export async function updateProfile(db: Database, user: Member, input: unknown) {
   const data = z
     .object({

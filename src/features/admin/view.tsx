@@ -19,6 +19,7 @@ import { useApp } from '@/components/context';
 import { PageTitle, Empty, Dialog, Field, Busy, DownloadLink } from '@/components/ui';
 import { PillerAdminPanel, PillerLibrary } from '@/features/piller/panel';
 import { ProductEditor } from '@/features/catalog/editor';
+import { AdminDataView } from '@/features/admin-data/view';
 import { PatchAdminView } from '@/features/patches/view';
 import { ProductImage } from '@/features/catalog/image';
 import { kindLabels } from '@/features/catalog/details';
@@ -48,6 +49,8 @@ export function AdminView({ section }: { section: string }) {
       return <Purchases />;
     case 'documents':
       return <Documents />;
+    case 'donnees':
+      return <AdminDataView />;
     case 'reglages':
       return <Settings />;
     case 'section':
@@ -759,6 +762,9 @@ function Settings() {
     <>
       <PageTitle title="Réglages" />
       <div className="admin-more-links">
+        <Link className="button secondary" href="/admin/donnees">
+          Données
+        </Link>
         <Link className="button secondary" href="/admin/patchs">
           Précommandes de patchs <ArrowUpRight size={16} />
         </Link>
