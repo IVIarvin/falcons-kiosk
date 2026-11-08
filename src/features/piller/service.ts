@@ -41,6 +41,13 @@ export async function getPillerLibrary(db: Database, actor: Member) {
   requireAdmin(actor);
   return getPillerQuotes(db);
 }
+export async function exportPillerVoices(db: Database, actor: Member) {
+  const library = await getPillerLibrary(db, actor);
+  return {
+    version: 1 as const,
+    quotes: library.map(({ id, text, enabled }) => ({ id, text, enabled })),
+  };
+}
 export async function savePillerQuote(
   db: Database,
   actor: Member,

@@ -2,10 +2,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Volume2, VolumeX, Play, AudioLines } from 'lucide-react';
 import { quotes, topicLabels, type QuoteTopic } from './quotes';
-import { Dialog } from '@/components/ui';
+import { Dialog, DownloadLink } from '@/components/ui';
 import { useApp } from '@/components/context';
 import type { ManagedQuote } from './service';
 import styles from './editor.module.css';
+import { createPillerPlayer, loadVoiceManifest, stopPillerAudio } from './audio-player';
 export function PillerComment({
   quoteId,
   text,
@@ -21,8 +22,8 @@ export function PillerComment({
   const [muted, setMuted] = useState(false);
   const [voiceNote, setVoiceNote] = useState('');
   const played = useRef<string | null>(null);
-  function speak() {
-    if (!quote) return;
+  const player = useRef<ReturnType<typeof createPillerPlayer> | null>(null);
+  function speakNative(text: string) {
     if (!('speechSynthesis' in window)) {
       setVoiceNote('Lecture vocale indisponible sur cet appareil.');
       return;
@@ -35,7 +36,7 @@ export function PillerComment({
       return;
     }
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(quote.text);
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'fr-CH';
     if (voice) utterance.voice = voice;
     utterance.rate = 0.98;
@@ -44,6 +45,19 @@ export function PillerComment({
       setVoiceNote('Lecture interrompue. Appuie sur Écouter pour réessayer.');
     utterance.onstart = () => setVoiceNote('');
     window.speechSynthesis.speak(utterance);
+  }
+  function speak() {
+    if (!quote) return;
+    player.current ??= createPillerPlayer({
+      loadManifest: loadVoiceManifest,
+      createAudio: (url) => new Audio(url),
+      speakNative,
+      cancelNative: () => {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      },
+      note: setVoiceNote,
+    });
+    void player.current.play(quote.text);
   }
   useEffect(() => {
     const saved = localStorage.getItem('falcons_muted') === '1';
@@ -56,7 +70,7 @@ export function PillerComment({
     }, 0);
     return () => {
       clearTimeout(timer);
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      player.current?.stop();
     };
   }, [quoteId, text, auto, forcePlay]);
   if (!quote) return null;
@@ -84,7 +98,10 @@ export function PillerComment({
             const value = !muted;
             setMuted(value);
             localStorage.setItem('falcons_muted', value ? '1' : '0');
-            if (value && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+            if (value) {
+              player.current?.stop();
+              stopPillerAudio();
+            }
           }}
           aria-label={muted ? 'Activer le son' : 'Couper le son'}
           aria-pressed={muted}
@@ -172,6 +189,7 @@ export function PillerLibrary() {
       <button type="button" className="button secondary" onClick={() => setOpen(true)}>
         Voir les {library.length} répliques
       </button>
+      <DownloadLink href="/api/admin/documents/piller">Exporter les répliques</DownloadLink>
       {open && (
         <Dialog title="Le répertoire de Piller" onClose={() => setOpen(false)}>
           <label className="field">

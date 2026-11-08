@@ -36,6 +36,7 @@ Ces accès sont réservés à la démonstration créée explicitement. Pour affi
 - Classements boissons et contributions, semaines Europe/Zurich, ex æquo et succès historiques recalculés après correction.
 - Adjudant Piller : 60 répliques actives selon le panier, texte et lecture vocale du même commentaire, son désactivable sur l'appareil. Les anciens identifiants restent lisibles dans les confirmations historiques.
 - Répliques modifiables et désactivables depuis les réglages, avec aperçu vocal, audit et protection contre les modifications concurrentes ; le texte des achats confirmés reste figé.
+- Préparation d'une voix masculine dédiée : export des textes, essais ElevenLabs, fichiers MP3 réutilisables et arrêt sûr de la lecture. La voix du téléphone reste active jusqu'à la préparation réelle des enregistrements. Voir [le guide voix](docs/piller-voice.md).
 - PWA, guide iPhone/Android, écran hors connexion sans cache des données de compte.
 - Catalogue PDF A4, affiche QR vers l'adresse de production, exports CSV et sauvegarde/restauration structurée.
 

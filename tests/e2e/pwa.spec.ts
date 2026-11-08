@@ -18,6 +18,16 @@ test('manifeste, icônes et écran hors connexion sans cache de compte', async (
     await navigator.serviceWorker.ready;
   });
   await page.reload();
+  await page.evaluate(async () => {
+    await fetch('/audio/piller/manifest.json', { cache: 'no-store' });
+  });
+  const cachedManifest = await page.evaluate(async () => {
+    for (const name of await caches.keys())
+      for (const req of await (await caches.open(name)).keys())
+        if (new URL(req.url).pathname === '/audio/piller/manifest.json') return true;
+    return false;
+  });
+  expect(cachedManifest).toBe(false);
   await context.setOffline(true);
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Le kiosque est hors connexion.' })).toBeVisible();

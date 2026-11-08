@@ -7,6 +7,7 @@ import { buildCatalogPdf, buildAccessPdf, toCsv } from '@/features/documents/ser
 import { DomainError, assert } from '@/lib/errors';
 import { createBackup } from '@/lib/backup';
 import { canonicalUrl } from '@/lib/config';
+import { exportPillerVoices } from '@/features/piller/service';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest, context: { params: Promise<{ kind: string }> }) {
@@ -17,6 +18,13 @@ export async function GET(req: NextRequest, context: { params: Promise<{ kind: s
     requireAdmin(user);
     const { kind } = await context.params;
     const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+    if (kind === 'piller')
+      return NextResponse.json(await exportPillerVoices(db, user), {
+        headers: {
+          ...headers,
+          'Content-Disposition': 'attachment; filename="falcons-repliques.json"',
+        },
+      });
     if (kind === 'catalogue' || kind === 'qr') {
       const products = await getCatalog(db);
       const bytes =
