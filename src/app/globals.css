@@ -1763,6 +1763,7 @@ input[type='date'] {
   .mobile-header .brand {
     font-size: 26px;
     gap: 12px;
+    white-space: nowrap;
   }
   .mobile-header .brand svg {
     width: 34px;
@@ -2471,15 +2472,6 @@ input[type='date'] {
 @media (max-width: 360px) {
   .mobile-header {
     padding-inline: 12px;
-  }
-  .mobile-header .brand {
-    font-size: 21px;
-    gap: 7px;
-    white-space: nowrap;
-  }
-  .mobile-header .brand svg {
-    width: 26px;
-    height: 26px;
   }
   .mobile-header-actions {
     gap: 8px;

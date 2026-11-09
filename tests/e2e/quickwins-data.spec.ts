@@ -125,7 +125,7 @@ test('données et préparation du reset avec sauvegarde, confirmation puis recon
   await page.getByRole('button', { name: 'Fermer', exact: true }).click();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Sauvegarder et préparer le reset', exact: true }).click();
-  expect((await download).suggestedFilename()).toMatch(/la-reserve-sauvegarde/);
+  expect((await download).suggestedFilename()).toMatch(/ravit-sauvegarde/);
   const modal = page.getByRole('dialog', { name: 'Réinitialiser le kiosque' });
   await expect(modal).toContainText('2 comptes admin conservés');
   await expect(modal.getByRole('button', { name: 'Confirmer la remise à zéro' })).toBeDisabled();
