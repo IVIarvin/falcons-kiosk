@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { appName } from '@/lib/brand';
 import '@fontsource/rajdhani/500.css';
 import '@fontsource/rajdhani/600.css';
 import '@fontsource/rajdhani/700.css';
@@ -7,11 +8,11 @@ import '@fontsource/barlow/500.css';
 import '@fontsource/barlow/600.css';
 import './globals.css';
 export const metadata: Metadata = {
-  title: 'Falcons — kiosque de section',
+  title: `${appName} — kiosque des Falcons`,
   description: 'Le kiosque de la famille Falcons. Boissons, snacks et ardoises.',
   manifest: '/manifest.webmanifest',
   robots: { index: false, follow: false },
-  appleWebApp: { capable: true, title: 'Falcons', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: appName, statusBarStyle: 'black-translucent' },
   icons: { icon: '/icons/192', apple: '/icons/192' },
 };
 export const viewport: Viewport = {
