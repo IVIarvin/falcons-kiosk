@@ -8,7 +8,14 @@ import { centsFromInput, formatCHF } from '@/lib/money';
 import { ApiError, durableAction, pendingAction } from '@/lib/client';
 import type { PatchCampaign } from './service';
 import styles from './view.module.css';
-import { PatchGallery, PatchImageEditor } from './image-view';
+import {
+  PatchGallery,
+  PatchImageEditor,
+  PatchImagePicker,
+  type PatchImageFiles,
+} from './image-view';
+import { updatePatchImage } from './image-client';
+import { patchImageKinds, patchImageLabels, type PatchImageKind } from './media';
 
 function usePatchAction(action: 'reservePatch' | 'confirmPatchOrder') {
   const { state, refresh, notice } = useApp();
@@ -240,9 +247,12 @@ export function PatchMemberView() {
   );
 }
 export function PatchAdminView() {
-  const { state, run, busy } = useApp();
+  const { state, run, busy, refresh, notice } = useApp();
   const order = usePatchAction('confirmPatchOrder');
   const [creating, setCreating] = useState(false);
+  const [createWorking, setCreateWorking] = useState(false);
+  const [createFiles, setCreateFiles] = useState<PatchImageFiles>({});
+  const [imageError, setImageError] = useState('');
   const [confirming, setConfirming] = useState<PatchCampaign | null>(null);
   const [cancelling, setCancelling] = useState<PatchCampaign | null>(null);
   const [editing, setEditing] = useState<PatchCampaign | null>(null);
@@ -260,6 +270,8 @@ export function PatchAdminView() {
   );
   async function create(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (createWorking || busy) return;
+    setCreateWorking(true);
     setError('');
     const data = new FormData(e.currentTarget);
     try {
@@ -270,11 +282,47 @@ export function PatchAdminView() {
         fundingGoalCents: centsFromInput(String(data.get('goal'))),
         deadline: String(data.get('deadline')),
       });
+      const failures: string[] = [];
+      for (const kind of patchImageKinds) {
+        const file = createFiles[kind];
+        if (!file) continue;
+        try {
+          await updatePatchImage(created.id, kind, file);
+        } catch (error) {
+          failures.push(
+            `${patchImageLabels[kind]} : ${error instanceof Error ? error.message : 'Import impossible.'}`,
+          );
+        }
+      }
+      if (Object.keys(createFiles).length) await refresh();
       setCreating(false);
-      setImageCampaignId(created.id);
+      setCreateFiles({});
+      if (failures.length) {
+        setImageError(
+          `La précommande est créée. ${failures.join(' ')} Ajoute de nouveau les images manquantes ci-dessous.`,
+        );
+        setImageCampaignId(created.id);
+      } else {
+        notice('Précommande créée.');
+      }
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setCreateWorking(false);
     }
+  }
+  function chooseCreationImage(kind: PatchImageKind, file?: File) {
+    setError('');
+    if (file && file.size > 2 * 1024 * 1024) {
+      setError(`${patchImageLabels[kind]} : choisis une image de 2 Mo maximum.`);
+      return;
+    }
+    setCreateFiles((current) => {
+      const next = { ...current };
+      if (file) next[kind] = file;
+      else delete next[kind];
+      return next;
+    });
   }
   async function confirm(e: FormEvent) {
     e.preventDefault();
@@ -325,6 +373,7 @@ export function PatchAdminView() {
           className="button primary"
           onClick={() => {
             setError('');
+            setCreateFiles({});
             setCreating(true);
           }}
         >
@@ -362,7 +411,10 @@ export function PatchAdminView() {
               <CampaignProgress campaign={c} />
               <button
                 className="button secondary"
-                onClick={() => setImageCampaignId(c.id)}
+                onClick={() => {
+                  setImageError('');
+                  setImageCampaignId(c.id);
+                }}
                 disabled={busy || order.working}
               >
                 {c.images.artwork || c.images.print
@@ -428,27 +480,43 @@ export function PatchAdminView() {
         </div>
       )}
       {imageCampaign && (
-        <PatchImageEditor campaign={imageCampaign} onClose={() => setImageCampaignId(null)} />
+        <PatchImageEditor
+          key={imageCampaign.id}
+          campaign={imageCampaign}
+          initialError={imageError}
+          onClose={() => setImageCampaignId(null)}
+        />
       )}
       {creating && (
         <Dialog
           title="Nouvelle précommande"
           onClose={() => {
-            if (!busy) setCreating(false);
+            if (!busy && !createWorking) setCreating(false);
           }}
         >
           <form onSubmit={create}>
             <Field label="Nom du patch">
-              <input name="name" required minLength={2} maxLength={120} />
+              <input name="name" required minLength={2} maxLength={120} disabled={createWorking} />
             </Field>
             <Field label="Description (facultative)">
-              <textarea name="description" maxLength={1000} rows={3} />
+              <textarea name="description" maxLength={1000} rows={3} disabled={createWorking} />
             </Field>
+            <PatchImagePicker
+              files={createFiles}
+              onChange={chooseCreationImage}
+              disabled={createWorking}
+            />
             <Field label="Prix estimé par patch (CHF)">
-              <input name="price" inputMode="decimal" required />
+              <input name="price" inputMode="decimal" required disabled={createWorking} />
             </Field>
             <Field label="Objectif minimum (CHF)">
-              <input name="goal" inputMode="decimal" defaultValue="100" required />
+              <input
+                name="goal"
+                inputMode="decimal"
+                defaultValue="100"
+                required
+                disabled={createWorking}
+              />
             </Field>
             <Field
               label="Dernier jour de réservation"
@@ -460,19 +528,21 @@ export function PatchAdminView() {
                 defaultValue={date}
                 required
                 aria-label="Dernier jour de réservation"
+                disabled={createWorking}
               />
             </Field>
-            <p className={styles.help}>
-              À l’étape suivante, ajoute les images Artwork et Print. Tu pourras aussi les modifier
-              depuis la précommande.
-            </p>
             {error && (
               <p role="alert" className={styles.error}>
                 {error}
               </p>
             )}
-            <button className="button primary full" disabled={busy}>
-              {busy ? <Busy /> : 'Ouvrir les réservations'}
+            {createWorking && (
+              <p role="status" className={styles.help}>
+                Création de la précommande et enregistrement des images…
+              </p>
+            )}
+            <button className="button primary full" disabled={busy || createWorking}>
+              {busy || createWorking ? <Busy /> : 'Ouvrir les réservations'}
             </button>
           </form>
         </Dialog>

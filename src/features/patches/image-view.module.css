@@ -50,6 +50,25 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
+.picker {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 20px 0;
+  padding: 18px 0 0;
+  min-width: 0;
+}
+.picker legend {
+  font: 600 20px var(--heading);
+  padding-right: 12px;
+}
+.picker legend span {
+  color: var(--muted);
+  font: 400 13px var(--body);
+}
+.picker .help {
+  font-size: 13px;
+  margin: 8px 0 16px;
+}
 .editor section {
   min-width: 0;
 }

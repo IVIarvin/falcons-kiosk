@@ -1,12 +1,92 @@
 'use client';
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { ExternalLink, Trash2 } from 'lucide-react';
 import { useApp } from '@/components/context';
 import { Dialog, Field } from '@/components/ui';
-import { authEvent } from '@/lib/client';
 import type { PatchCampaign } from './service';
 import { patchImageKinds, patchImageLabels, type PatchImageKind } from './media';
 import styles from './image-view.module.css';
+import { updatePatchImage } from './image-client';
+
+export type PatchImageFiles = Partial<Record<PatchImageKind, File>>;
+function PatchImageChoice({
+  kind,
+  file,
+  onChange,
+}: {
+  kind: PatchImageKind;
+  file?: File;
+  onChange: (kind: PatchImageKind, file?: File) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!file && input.current) input.current.value = '';
+  }, [file]);
+  return (
+    <section>
+      <Field
+        label={`Image ${patchImageLabels[kind]}`}
+        hint={kind === 'artwork' ? 'Le visuel original.' : 'Le rendu du patch imprimé ou brodé.'}
+      >
+        <input
+          ref={input}
+          type="file"
+          aria-label={`Image ${patchImageLabels[kind]}`}
+          accept="image/png,image/jpeg,image/webp"
+          onChange={(event) => {
+            const chosen = event.currentTarget.files?.[0];
+            onChange(kind, chosen);
+            if (chosen && chosen.size > 2 * 1024 * 1024) event.currentTarget.value = '';
+          }}
+        />
+      </Field>
+      {file && (
+        <>
+          <SelectedImage file={file} kind={kind} />
+          <button type="button" className="button secondary" onClick={() => onChange(kind)}>
+            <Trash2 size={16} /> Retirer la sélection {patchImageLabels[kind]}
+          </button>
+        </>
+      )}
+    </section>
+  );
+}
+function SelectedImage({ file, kind }: { file: File; kind: PatchImageKind }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    const next = URL.createObjectURL(file);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [file]);
+  return url ? (
+    <img className={styles.preview} src={url} alt={`Aperçu ${patchImageLabels[kind]}`} />
+  ) : null;
+}
+export function PatchImagePicker({
+  files,
+  onChange,
+  disabled,
+}: {
+  files: PatchImageFiles;
+  onChange: (kind: PatchImageKind, file?: File) => void;
+  disabled: boolean;
+}) {
+  return (
+    <fieldset className={styles.picker} disabled={disabled}>
+      <legend>
+        Images du patch <span>(facultatives)</span>
+      </legend>
+      <p className={styles.help}>
+        PNG, JPEG ou WebP · 2 Mo maximum par image. Les deux images seront visibles par les membres.
+      </p>
+      <div className={styles.editor}>
+        {patchImageKinds.map((kind) => (
+          <PatchImageChoice key={kind} kind={kind} file={files[kind]} onChange={onChange} />
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 export function PatchGallery({ campaign }: { campaign: PatchCampaign }) {
   const kinds = patchImageKinds.filter((kind) => campaign.images[kind]);
@@ -39,13 +119,15 @@ export function PatchGallery({ campaign }: { campaign: PatchCampaign }) {
 export function PatchImageEditor({
   campaign,
   onClose,
+  initialError = '',
 }: {
   campaign: PatchCampaign;
   onClose: () => void;
+  initialError?: string;
 }) {
   const { refresh } = useApp();
   const [working, setWorking] = useState<PatchImageKind | null>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
   const [message, setMessage] = useState('');
   async function request(kind: PatchImageKind, file?: File) {
     if (working) return;
@@ -57,16 +139,7 @@ export function PatchImageEditor({
     setError('');
     setMessage('');
     try {
-      const body = file ? new FormData() : undefined;
-      if (file) body!.set('file', file);
-      const response = await fetch(
-        `/api/patchs/${encodeURIComponent(campaign.id)}/images/${kind}`,
-        { method: file ? 'POST' : 'DELETE', body, credentials: 'same-origin' },
-      );
-      if (response.status === 401) window.dispatchEvent(new Event(authEvent));
-      const result = await response.json();
-      if (!response.ok || !result.ok)
-        throw new Error(result.message ?? 'Impossible d’enregistrer cette image.');
+      await updatePatchImage(campaign.id, kind, file);
       await refresh();
       setMessage(`${patchImageLabels[kind]} ${file ? 'enregistré' : 'retiré'}.`);
     } catch (e) {
