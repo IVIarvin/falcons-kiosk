@@ -13,3 +13,19 @@
   color: var(--accent);
   border-color: var(--accent);
 }
+.favorite > svg {
+  transition: transform var(--motion-press) var(--ease);
+}
+.favorite[aria-pressed='true'] > svg {
+  transform: rotate(-8deg) scale(1.08);
+}
+.favorite:focus-visible > svg,
+:global(html[data-input='keyboard']) .favorite > svg {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .favorite > svg {
+    transform: none !important;
+    transition: none;
+  }
+}

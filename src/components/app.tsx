@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -24,13 +24,8 @@ import type { Snapshot } from '@/lib/application';
 import { api, ApiError, authEvent } from '@/lib/client';
 import { AppContext } from './context';
 import { Logo } from './ui';
+import { NavigationHint, trackInputModality } from './motion';
 import { AuthForm } from '@/features/auth/form';
-import { KioskView } from '@/features/checkout/view';
-import { ArdoiseView } from '@/features/ledger/view';
-import { CrewView } from '@/features/achievements/view';
-import { ProfileView } from '@/features/profile/view';
-import { AdminView } from '@/features/admin/view';
-import { PatchMemberView } from '@/features/patches/view';
 const memberLinks = [
   { href: '/', label: 'Kiosque', Icon: ShoppingCart },
   { href: '/ardoise', label: 'Ardoise', Icon: ReceiptText },
@@ -56,7 +51,7 @@ const adminMobilePaths = [
   '/admin/section',
   '/admin/reglages',
 ];
-export function App({ demo = false }: { demo?: boolean }) {
+export function App({ demo = false, children }: { demo?: boolean; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [state, setState] = useState<Snapshot | null>(null);
@@ -66,9 +61,13 @@ export function App({ demo = false }: { demo?: boolean }) {
   const [toast, setToast] = useState('');
   const [online, setOnline] = useState(true);
   const generation = useRef(0);
+  const reading = useRef(false);
+  const validatedAt = useRef(0);
+  useEffect(trackInputModality, []);
   const authRoute = ['/connexion', '/inscription', '/recuperation'].includes(pathname);
   const refresh = useCallback(async () => {
     const current = ++generation.current;
+    reading.current = true;
     try {
       const response = await fetch('/api/state', { cache: 'no-store', credentials: 'same-origin' });
       const result = await response.json();
@@ -80,16 +79,20 @@ export function App({ demo = false }: { demo?: boolean }) {
       }
       if (!result.ok) throw new Error(result.message);
       setState(result.data);
+      validatedAt.current = Date.now();
       setFailure('');
     } catch (e) {
       if (current === generation.current)
         setFailure(e instanceof Error ? e.message : 'Connexion indisponible.');
     } finally {
-      if (current === generation.current) setLoaded(true);
+      if (current === generation.current) {
+        reading.current = false;
+        setLoaded(true);
+      }
     }
   }, []);
   useEffect(() => {
-    void refresh();
+    if (!reading.current && Date.now() - validatedAt.current >= 15000) void refresh();
   }, [refresh, pathname]);
   useEffect(() => {
     const sync = () => {
@@ -99,13 +102,14 @@ export function App({ demo = false }: { demo?: boolean }) {
       setBusy(false);
       setFailure('');
       setToast('');
+      validatedAt.current = 0;
       void refresh();
     };
     const storage = (event: StorageEvent) => {
       if (event.key === authEvent) sync();
     };
     const visible = () => {
-      if (document.visibilityState === 'visible') sync();
+      if (document.visibilityState === 'visible' && !reading.current) void refresh();
     };
     const restored = (event: PageTransitionEvent) => {
       if (event.persisted) sync();
@@ -230,6 +234,7 @@ export function App({ demo = false }: { demo?: boolean }) {
               >
                 <Icon size={20} />
                 {label}
+                <NavigationHint />
               </Link>
             ))}
           </nav>
@@ -267,6 +272,7 @@ export function App({ demo = false }: { demo?: boolean }) {
               >
                 {admin ? <ShoppingCart size={17} /> : <Settings size={17} />}
                 {admin ? 'Kiosque' : 'Admin'}
+                <NavigationHint />
               </Link>
             )}
             <Link className="mobile-avatar" href="/profil" aria-label="Mon profil">
@@ -290,26 +296,7 @@ export function App({ demo = false }: { demo?: boolean }) {
               </button>
             </div>
           )}
-          {admin ? (
-            <AdminView section={pathname.split('/')[2] ?? ''} />
-          ) : pathname.startsWith('/admin') ? (
-            <div className="empty">
-              <h1>Accès réservé au responsable.</h1>
-              <Link href="/" className="button secondary">
-                Retour au kiosque
-              </Link>
-            </div>
-          ) : pathname === '/ardoise' ? (
-            <ArdoiseView />
-          ) : pathname === '/patchs' ? (
-            <PatchMemberView />
-          ) : pathname === '/falcons' ? (
-            <CrewView />
-          ) : pathname === '/profil' ? (
-            <ProfileView />
-          ) : (
-            <KioskView />
-          )}
+          {children}
         </main>
         <nav
           className={`mobile-nav ${admin ? 'admin-mobile-nav' : ''}`}
@@ -331,6 +318,7 @@ export function App({ demo = false }: { demo?: boolean }) {
               >
                 <Icon size={23} />
                 <span>{href === '/admin/reglages' ? 'Plus' : label}</span>
+                <NavigationHint />
               </Link>
             );
           })}

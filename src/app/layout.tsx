@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { appName } from '@/lib/brand';
+import { App } from '@/components/app';
 import '@fontsource/rajdhani/500.css';
 import '@fontsource/rajdhani/600.css';
 import '@fontsource/rajdhani/700.css';
@@ -23,8 +24,12 @@ export const viewport: Viewport = {
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <body>{children}</body>
+    <html lang="fr" data-scroll-behavior="smooth">
+      <body>
+        <App demo={process.env.FALCONS_DEMO === '1' && process.env.NODE_ENV !== 'production'}>
+          {children}
+        </App>
+      </body>
     </html>
   );
 }
