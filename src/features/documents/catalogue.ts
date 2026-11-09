@@ -1,5 +1,6 @@
 import type { PDFPage } from 'pdf-lib';
 import { formatCHF } from '@/lib/money';
+import { appName } from '@/lib/brand';
 import { productCategories, unclassifiedCategory } from '@/features/catalog/categories';
 import {
   brand,
@@ -20,7 +21,7 @@ export type PrintableProduct = {
   available: boolean;
 };
 export async function buildCatalogPdf(products: PrintableProduct[]): Promise<Uint8Array> {
-  const { pdf, fonts } = await createPrintDocument('Falcons - Catalogue du kiosque');
+  const { pdf, fonts } = await createPrintDocument(`${appName} - Catalogue du kiosque`);
   let page: PDFPage;
   let y = 0;
   let category = '';

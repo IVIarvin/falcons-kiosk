@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next';
+import { appName } from '@/lib/brand';
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Falcons — Kiosque de section',
-    short_name: 'Falcons',
+    name: `${appName} — Kiosque des Falcons`,
+    short_name: appName,
     description: 'Le ravitaillement de la famille Falcons',
     start_url: '/',
     scope: '/',

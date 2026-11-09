@@ -8,6 +8,7 @@ import { DomainError, assert } from '@/lib/errors';
 import { createBackup } from '@/lib/backup';
 import { canonicalUrl } from '@/lib/config';
 import { exportPillerVoices } from '@/features/piller/service';
+import { appFilePrefix } from '@/lib/brand';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest, context: { params: Promise<{ kind: string }> }) {
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ kind: s
       return NextResponse.json(await exportPillerVoices(db, user), {
         headers: {
           ...headers,
-          'Content-Disposition': 'attachment; filename="falcons-repliques.json"',
+          'Content-Disposition': `attachment; filename="${appFilePrefix}-repliques.json"`,
         },
       });
     if (kind === 'catalogue' || kind === 'qr') {
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ kind: s
         headers: {
           ...headers,
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="falcons-${kind}.pdf"`,
+          'Content-Disposition': `attachment; filename="${appFilePrefix}-${kind}.pdf"`,
         },
       });
     }
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ kind: s
           headers: {
             ...headers,
             'Content-Type': 'text/csv; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="falcons-comptes.csv"',
+            'Content-Disposition': `attachment; filename="${appFilePrefix}-comptes.csv"`,
           },
         },
       );
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ kind: s
       return NextResponse.json(await createBackup(db, user), {
         headers: {
           ...headers,
-          'Content-Disposition': 'attachment; filename="falcons-sauvegarde.json"',
+          'Content-Disposition': `attachment; filename="${appFilePrefix}-sauvegarde.json"`,
         },
       });
     const tables: Record<string, string[]> = {
@@ -89,7 +90,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ kind: s
         headers: {
           ...headers,
           'Content-Type': 'text/csv; charset=utf-8',
-          'Content-Disposition': `attachment; filename="falcons-${kind}.csv"`,
+          'Content-Disposition': `attachment; filename="${appFilePrefix}-${kind}.csv"`,
         },
       },
     );

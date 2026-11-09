@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import { assert } from '@/lib/errors';
-import { brand, createPrintDocument, drawText, footer, pageSize, palette, wrap } from './layout';
+import { appName } from '@/lib/brand';
+import { brand, createPrintDocument, drawText, footer, pageSize, palette } from './layout';
 
 export async function buildAccessPdf(canonicalUrl: string): Promise<Uint8Array> {
   assert(canonicalUrl, 'Configure l’adresse publique du kiosque avant de générer le QR.');
@@ -15,7 +16,7 @@ export async function buildAccessPdf(canonicalUrl: string): Promise<Uint8Array> 
     !url.username && !url.password && !url.hash && !url.search,
     'Utilise une adresse publique sans identifiant ni paramètre.',
   );
-  const { pdf, fonts } = await createPrintDocument('Falcons - Accès au kiosque');
+  const { pdf, fonts } = await createPrintDocument(`${appName} - Accès au kiosque`);
   const page = pdf.addPage([pageSize.width, pageSize.height]);
   page.drawRectangle({ x: 0, y: 602, width: pageSize.width, height: 240, color: palette.dark });
   brand(page, fonts);
@@ -40,27 +41,24 @@ export async function buildAccessPdf(canonicalUrl: string): Promise<Uint8Array> 
     borderWidth: 0.7,
   });
   page.drawImage(image, { x: 119.64, y: 248, width: 356, height: 356 });
-  let address = wrap(url.href.replace(/^https:\/\//, '').replace(/\/$/, ''), fonts.strong, 14, 475);
-  if (address.length > 3)
-    address = [...wrap(url.host, fonts.strong, 14, 475), 'Adresse complète dans le QR.'];
-  address.forEach((line, i) =>
-    drawText(
-      page,
-      fonts.strong,
-      line,
-      (pageSize.width - fonts.strong.widthOfTextAtSize(line, 14)) / 2,
-      204 - i * 19,
-      14,
-    ),
+  const quote = '« Suralimenté et sous-entraîné. »';
+  drawText(
+    page,
+    fonts.display,
+    quote,
+    (pageSize.width - fonts.display.widthOfTextAtSize(quote, 24)) / 2,
+    169,
+    24,
   );
-  const instruction = 'Choisis tes produits. Valide ton ardoise.';
+  const author = 'Adj. Piller';
   drawText(
     page,
     fonts.body,
-    instruction,
-    (pageSize.width - fonts.body.widthOfTextAtSize(instruction, 14)) / 2,
-    112,
-    14,
+    author,
+    (pageSize.width - fonts.body.widthOfTextAtSize(author, 13)) / 2,
+    140,
+    13,
+    palette.muted,
   );
   footer(page, fonts);
   return pdf.save();

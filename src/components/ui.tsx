@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { X, ArrowUpRight, RefreshCw } from 'lucide-react';
+import { appWordmark } from '@/lib/brand';
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <span className="brand">
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <path d="M5 9h54L45 23H25L12 34l12-2-9 25 25-29H29l9-7H19z" fill="currentColor" />
       </svg>
-      {!compact && <span>FALCONS</span>}
+      {!compact && <span>{appWordmark}</span>}
     </span>
   );
 }

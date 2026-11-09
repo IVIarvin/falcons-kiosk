@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { PDFDocument, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
+import { appName, appWordmark, sectionName } from '@/lib/brand';
 
 export const pageSize = { width: 595.28, height: 841.89 };
 export const palette = {
@@ -29,8 +30,8 @@ export async function createPrintDocument(title: string) {
     embed('Rajdhani-SemiBold.ttf'),
   ]);
   pdf.setTitle(title);
-  pdf.setAuthor('Falcons');
-  pdf.setCreator('Kiosque Falcons');
+  pdf.setAuthor(sectionName);
+  pdf.setCreator(appName);
   return { pdf, fonts: { body, strong, display } };
 }
 export function drawText(
@@ -84,8 +85,8 @@ export function brand(page: PDFPage, fonts: PrintFonts) {
     scale: 0.58,
     color: palette.accent,
   });
-  drawText(page, fonts.display, 'FALCONS', 86, 780, 32, palette.white);
-  rightText(page, fonts.strong, 'KIOSQUE DE SECTION', 555, 788, 10, palette.accent);
+  drawText(page, fonts.display, appWordmark, 86, 780, 32, palette.white);
+  rightText(page, fonts.strong, 'KIOSQUE DES FALCONS', 555, 788, 10, palette.accent);
 }
 export function footer(page: PDFPage, fonts: PrintFonts, pageNumber?: number) {
   page.drawLine({
@@ -95,6 +96,6 @@ export function footer(page: PDFPage, fonts: PrintFonts, pageNumber?: number) {
     color: palette.line,
   });
   const date = new Date().toLocaleDateString('fr-CH', { timeZone: 'Europe/Zurich' });
-  drawText(page, fonts.body, `FALCONS / ${date}`, 40, 31, 9, palette.muted);
+  drawText(page, fonts.body, `${appWordmark} / ${date}`, 40, 31, 9, palette.muted);
   if (pageNumber) rightText(page, fonts.body, String(pageNumber), 555, 31, 10, palette.muted);
 }
