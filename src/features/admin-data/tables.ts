@@ -61,6 +61,11 @@ export const dataTables = {
     columns: ['id', 'campaign_id', 'user_id', 'quantity', 'consumption_id', 'updated_at'],
     order: 'updated_at DESC,id',
   },
+  patch_images: {
+    label: 'Images des patchs',
+    columns: ['campaign_id', 'kind', 'version', 'uploaded_by', 'updated_at'],
+    order: 'updated_at DESC,campaign_id,kind',
+  },
   piller_quotes: {
     label: 'Répliques personnalisées',
     columns: ['id', 'text', 'topic', 'enabled', 'revision'],
@@ -76,6 +81,7 @@ export type DataTable = keyof typeof dataTables;
 // Lock campaign before accounts, matching reservation/confirmation services.
 export const resetTables = [
   'patch_campaigns',
+  'patch_images',
   'users',
   'products',
   'patch_reservations',
@@ -97,6 +103,7 @@ export const resetTables = [
   'admin_reset_runs',
 ] as const;
 export const deletionOrder = [
+  'patch_images',
   'patch_reservations',
   'extra_requests',
   'consumption_removals',

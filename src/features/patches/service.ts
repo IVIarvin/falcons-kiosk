@@ -5,6 +5,7 @@ import { requireAdmin, type Member } from '@/features/auth/service';
 import { assert } from '@/lib/errors';
 import { requestHash } from '@/features/ledger/service';
 import { replayRequest, saveRequest } from '@/lib/extra-requests';
+import { patchImageUrl, type PatchImageKind } from './media';
 
 type CampaignRow = {
   id: string;
@@ -51,6 +52,7 @@ export type PatchCampaign = {
     charged: boolean;
     chargeVoided: boolean;
   }[];
+  images: { artwork: string | null; print: string | null };
 };
 export async function getPatchBoard(db: Database, actor: Member): Promise<PatchCampaign[]> {
   const campaigns = await db.query<CampaignRow>(
@@ -62,6 +64,9 @@ export async function getPatchBoard(db: Database, actor: Member): Promise<PatchC
   );
   const totals = await db.query<{ campaign_id: string; quantity: string; count: string }>(
     'SELECT campaign_id,COALESCE(sum(quantity),0) AS quantity,count(*) FILTER(WHERE quantity>0) AS count FROM patch_reservations GROUP BY campaign_id',
+  );
+  const images = await db.query<{ campaign_id: string; kind: PatchImageKind; version: string }>(
+    'SELECT campaign_id,kind,version FROM patch_images',
   );
   return campaigns.map((c) => {
     const rows = reservations.filter((r) => r.campaign_id === c.id);
@@ -85,6 +90,22 @@ export async function getPatchBoard(db: Database, actor: Member): Promise<PatchC
       myChargeVoided: own?.charge_voided ?? false,
       totalQuantity: total,
       totalCents: total * price,
+      images: {
+        artwork: images.some((i) => i.campaign_id === c.id && i.kind === 'artwork')
+          ? patchImageUrl(
+              c.id,
+              'artwork',
+              images.find((i) => i.campaign_id === c.id && i.kind === 'artwork')!.version,
+            )
+          : null,
+        print: images.some((i) => i.campaign_id === c.id && i.kind === 'print')
+          ? patchImageUrl(
+              c.id,
+              'print',
+              images.find((i) => i.campaign_id === c.id && i.kind === 'print')!.version,
+            )
+          : null,
+      },
       participants:
         actor.role === 'admin'
           ? rows

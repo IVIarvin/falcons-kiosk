@@ -123,6 +123,7 @@ const columns: Record<string, string[]> = {
     'created_at',
     'updated_at',
   ],
+  patch_images: ['campaign_id', 'kind', 'data_base64', 'version', 'uploaded_by', 'updated_at'],
   extra_requests: ['user_id', 'action', 'idempotency_key', 'request_hash', 'result', 'created_at'],
   audit: [
     'id',
@@ -157,6 +158,7 @@ export async function restoreBackup(db: Database, input: unknown) {
         'consumption_removals',
         'patch_campaigns',
         'patch_reservations',
+        'patch_images',
         'extra_requests',
       ].includes(name) &&
         backup.tables[name] === undefined) ||

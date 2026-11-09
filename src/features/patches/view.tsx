@@ -8,6 +8,7 @@ import { centsFromInput, formatCHF } from '@/lib/money';
 import { ApiError, durableAction, pendingAction } from '@/lib/client';
 import type { PatchCampaign } from './service';
 import styles from './view.module.css';
+import { PatchGallery, PatchImageEditor } from './image-view';
 
 function usePatchAction(action: 'reservePatch' | 'confirmPatchOrder') {
   const { state, refresh, notice } = useApp();
@@ -128,6 +129,7 @@ function Reservation({
   return (
     <article className={styles.campaign}>
       <CampaignHeading campaign={c} />
+      <PatchGallery campaign={c} />
       <CampaignCopy campaign={c} />
       <CampaignProgress campaign={c} />
       {c.myQuantity > 0 && c.status !== 'cancelled' && (
@@ -244,6 +246,8 @@ export function PatchAdminView() {
   const [confirming, setConfirming] = useState<PatchCampaign | null>(null);
   const [cancelling, setCancelling] = useState<PatchCampaign | null>(null);
   const [editing, setEditing] = useState<PatchCampaign | null>(null);
+  const [imageCampaignId, setImageCampaignId] = useState<string | null>(null);
+  const imageCampaign = state.patches.find((c) => c.id === imageCampaignId);
   const [finalPrice, setFinalPrice] = useState('');
   const [error, setError] = useState('');
   let finalTotal: number | null = null;
@@ -352,8 +356,16 @@ export function PatchAdminView() {
           {state.patches.map((c) => (
             <article className={styles.campaign} key={c.id}>
               <CampaignHeading campaign={c} />
+              <PatchGallery campaign={c} />
               <CampaignCopy campaign={c} />
               <CampaignProgress campaign={c} />
+              <button
+                className="button secondary"
+                onClick={() => setImageCampaignId(c.id)}
+                disabled={busy || order.working}
+              >
+                Images du patch
+              </button>
               {c.participants.length > 0 && (
                 <details className={styles.participants}>
                   <summary>Voir les réservations</summary>
@@ -411,6 +423,9 @@ export function PatchAdminView() {
             </article>
           ))}
         </div>
+      )}
+      {imageCampaign && (
+        <PatchImageEditor campaign={imageCampaign} onClose={() => setImageCampaignId(null)} />
       )}
       {creating && (
         <Dialog

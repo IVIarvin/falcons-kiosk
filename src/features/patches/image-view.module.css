@@ -1,0 +1,101 @@
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.gallery figure {
+  margin: 0;
+  min-width: 0;
+}
+.gallery figcaption {
+  font: 600 20px var(--heading);
+  margin-bottom: 8px;
+}
+.frame {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  max-height: 280px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  overflow: hidden;
+}
+.frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.expand {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 3px;
+  box-sizing: content-box;
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text);
+}
+.help {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 18px;
+}
+.editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.editor section {
+  min-width: 0;
+}
+.editor h3 {
+  margin-bottom: 12px;
+}
+.preview,
+.empty {
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+.empty {
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 14px;
+}
+.editor input[type='file'] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 13px;
+  padding: 8px;
+}
+.editor button {
+  min-height: 44px;
+}
+.error {
+  color: var(--danger);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.done {
+  margin-top: 20px;
+}
+@media (max-width: 600px) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gallery {
+    gap: 12px;
+  }
+}
