@@ -3,13 +3,12 @@ import { mkdir } from 'node:fs/promises';
 import sharp from 'sharp';
 import { createTestDatabase } from '../../src/lib/db/index';
 import { register, type Member } from '../../src/features/auth/service';
-import { createPatchCampaign } from '../../src/features/patches/service';
 import {
   savePatchImage,
   readPatchImage,
   deletePatchImage,
 } from '../../src/features/patches/images';
-import { getSnapshot } from '../../src/lib/application';
+import { dispatch, getSnapshot } from '../../src/lib/application';
 
 test('deux images importées par l’admin, visibles aux membres et indépendantes sur mobile', async ({
   page,
@@ -33,36 +32,32 @@ test('deux images importées par l’admin, visibles aux membres et indépendant
       phone: '0792223344',
       password: 'password-falcons',
     });
-    const campaign = await createPatchCampaign(db, admin, {
-      name: 'Falcons reconnaissance',
-      priceCents: 800,
-      deadline: '2099-12-31',
-    });
+    let campaignId = '';
     let actor: Member = admin;
     await page.route('**/api/state', (route) =>
       getSnapshot(db, actor).then((data) => route.fulfill({ json: { ok: true, data } })),
     );
+    await page.route('**/api/action', async (route) => {
+      const { action, data } = route.request().postDataJSON();
+      const result = await dispatch(db, actor, action, data);
+      if (action === 'createPatchCampaign') campaignId = (result as { id: string }).id;
+      await route.fulfill({ json: { ok: true, data: result } });
+    });
     await page.route('**/api/patchs/*/images/*', async (route) => {
       const req = route.request();
       const kind = new URL(req.url()).pathname.split('/').at(-1)!;
       if (req.method() === 'GET') {
-        const image = await readPatchImage(db, actor, campaign.id, kind);
+        const image = await readPatchImage(db, actor, campaignId, kind);
         await route.fulfill({ body: image.data, contentType: 'image/webp' });
       } else if (req.method() === 'POST') {
         const form = await new Response(new Uint8Array(req.postDataBuffer()!), {
           headers: { 'Content-Type': req.headers()['content-type'] },
         }).formData();
         const file = form.get('file') as File;
-        await savePatchImage(
-          db,
-          actor,
-          campaign.id,
-          kind,
-          new Uint8Array(await file.arrayBuffer()),
-        );
+        await savePatchImage(db, actor, campaignId, kind, new Uint8Array(await file.arrayBuffer()));
         await route.fulfill({ json: { ok: true } });
       } else {
-        await deletePatchImage(db, actor, campaign.id, kind);
+        await deletePatchImage(db, actor, campaignId, kind);
         await route.fulfill({ json: { ok: true } });
       }
     });
@@ -73,8 +68,14 @@ test('deux images importées par l’admin, visibles aux membres et indépendant
       .toBuffer();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/admin/patchs');
-    await page.getByRole('button', { name: 'Images du patch', exact: true }).click();
+    await page.getByRole('button', { name: 'Créer une précommande', exact: true }).click();
+    const creation = page.getByRole('dialog', { name: 'Nouvelle précommande', exact: true });
+    await creation.getByLabel('Nom du patch', { exact: true }).fill('Falcons reconnaissance');
+    await creation.getByLabel('Prix estimé par patch (CHF)', { exact: true }).fill('8');
+    await creation.getByLabel('Dernier jour de réservation', { exact: true }).fill('2099-12-31');
+    await creation.getByRole('button', { name: 'Ouvrir les réservations', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Images du patch', exact: true });
+    await expect(editor).toBeVisible();
     for (const kind of ['Artwork', 'Print']) {
       await editor
         .getByLabel(`Image ${kind}`, { exact: true })
@@ -107,11 +108,11 @@ test('deux images importées par l’admin, visibles aux membres et indépendant
         .poll(() => image.evaluate((el) => (el as HTMLImageElement).naturalWidth))
         .toBeGreaterThan(0);
     }
-    await expect(page.getByRole('button', { name: 'Images du patch', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Artwork \/ Print/ })).toHaveCount(0);
     for (const width of [320, 390, 1440]) await capture('member', width);
     actor = admin;
     await page.goto('/admin/patchs');
-    await page.getByRole('button', { name: 'Images du patch', exact: true }).click();
+    await page.getByRole('button', { name: 'Modifier Artwork / Print', exact: true }).click();
     await editor.getByRole('button', { name: 'Retirer Artwork', exact: true }).click();
     await expect(editor.getByRole('status')).toHaveText('Artwork retiré.');
     await editor.getByRole('button', { name: 'Terminé', exact: true }).click();

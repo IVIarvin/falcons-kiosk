@@ -263,7 +263,7 @@ export function PatchAdminView() {
     setError('');
     const data = new FormData(e.currentTarget);
     try {
-      await run('createPatchCampaign', {
+      const created = await run<{ id: string }>('createPatchCampaign', {
         name: String(data.get('name')),
         description: String(data.get('description') ?? ''),
         priceCents: centsFromInput(String(data.get('price'))),
@@ -271,6 +271,7 @@ export function PatchAdminView() {
         deadline: String(data.get('deadline')),
       });
       setCreating(false);
+      setImageCampaignId(created.id);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -364,7 +365,9 @@ export function PatchAdminView() {
                 onClick={() => setImageCampaignId(c.id)}
                 disabled={busy || order.working}
               >
-                Images du patch
+                {c.images.artwork || c.images.print
+                  ? 'Modifier Artwork / Print'
+                  : 'Ajouter Artwork / Print'}
               </button>
               {c.participants.length > 0 && (
                 <details className={styles.participants}>
@@ -459,6 +462,10 @@ export function PatchAdminView() {
                 aria-label="Dernier jour de réservation"
               />
             </Field>
+            <p className={styles.help}>
+              À l’étape suivante, ajoute les images Artwork et Print. Tu pourras aussi les modifier
+              depuis la précommande.
+            </p>
             {error && (
               <p role="alert" className={styles.error}>
                 {error}

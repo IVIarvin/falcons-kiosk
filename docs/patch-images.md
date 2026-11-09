@@ -1,6 +1,6 @@
 # Images des patchs
 
-Dans **Administration → Patchs → Images du patch**, importer séparément l’**Artwork** et le **Print**. Chaque emplacement peut être remplacé ou retiré, même après la commande. Les membres voient les deux images sur la page Patchs et peuvent les ouvrir en grand.
+Dans **Administration → Patchs → Ajouter Artwork / Print**, importer séparément l’**Artwork** et le **Print**. L’éditeur s’ouvre aussi directement après la création d’une précommande. Chaque emplacement peut être remplacé ou retiré avec **Modifier Artwork / Print**, même après la commande. Les membres voient les deux images sur la page Patchs et peuvent les ouvrir en grand.
 
 Formats acceptés : PNG, JPEG ou WebP statiques, 2 Mo maximum par fichier. Les images sont réorientées et optimisées en WebP, jusqu’à 1600 × 1600 pixels. Les proportions sont conservées.
 

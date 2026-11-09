@@ -6,4 +6,6 @@ L’affiche QR conserve son code et sa destination HTTPS. Elle ne montre plus l�
 
 - [x] Centraliser le nom, mettre à jour Logo, métadonnées, PWA/hors connexion et exports.
 - [x] Mettre à jour les deux PDF, rendre et inspecter les pages, extraire le texte et décoder le QR réel.
-- [ ] Vérifier les types et la compilation avec le chantier de navigation parallèle, déployer et contrôler le nom et les PDF servis en production.
+- [x] Vérifier les types et la compilation du snapshot Git exact, déployer et contrôler le nom et les PDF servis en production.
+
+Publication vérifiée : commit `6dc2ab4007a4daddf5eb81c78f153efc29c43ebd`, Vercel `dpl_A9DABFbfrDeHkhLAchZ6seW3KwMz`, READY production. Contrôles connectés : nom visible, titre navigateur, titre Apple, manifeste, page hors connexion, noms de téléchargement et métadonnées des PDF conformes. Écrans à 320/390/1440 sans débordement ni erreur JavaScript. Les PDF réellement téléchargés ont été rendus et inspectés ; le QR rendu se décode vers la même URL de production, sans adresse imprimée ni ancienne consigne. Aucun achat ni image fictive en production.
