@@ -5,6 +5,7 @@ import { useApp } from '@/components/context';
 import { Busy, Dialog, Field, PageTitle } from '@/components/ui';
 import { authEvent, clearPrivateState } from '@/lib/client';
 import { formatCHF } from '@/lib/money';
+import { appFilePrefix } from '@/lib/brand';
 import type { AdminDataResult, ResetPreparation } from './service';
 import styles from './view.module.css';
 type Ticket = Pick<ResetPreparation, 'token' | 'counts' | 'adminsPreserved'> & {
@@ -153,7 +154,7 @@ export function AdminDataView() {
       );
       const link = document.createElement('a');
       link.href = url;
-      link.download = `falcons-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `${appFilePrefix}-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
