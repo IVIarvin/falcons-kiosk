@@ -1,0 +1,222 @@
+.intro {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+.feedback {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.feedback:empty {
+  display: none;
+}
+.feedback > span {
+  flex: 1;
+  min-width: 160px;
+}
+.feedback button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 10px 0;
+}
+.people {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 40dvh;
+  overflow-y: auto;
+  padding: 4px;
+  margin: -4px;
+}
+.person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+}
+.person:hover:not(:disabled) {
+  background: var(--panel-raised);
+  border-color: var(--accent);
+}
+.person > span {
+  min-width: 0;
+}
+.person strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.person small {
+  color: var(--muted);
+}
+.person > svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+.loading {
+  padding: 24px 0;
+}
+.createVisitor {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 12px;
+}
+.createVisitor summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  min-height: 44px;
+  color: var(--accent);
+}
+.createVisitor p {
+  color: var(--muted);
+}
+.createVisitor form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.createVisitor label {
+  flex: 1 1 180px;
+  margin: 0;
+}
+.serveButton {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 8px 10px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0 20px;
+  align-items: end;
+}
+.toolbar label {
+  margin: 0;
+  flex: 1 1 140px;
+}
+.toolbar button {
+  min-height: 46px;
+}
+.reportInfo {
+  color: var(--muted);
+  max-width: 70ch;
+}
+.results {
+  margin-block: 24px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.table th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 13px;
+}
+.table td small {
+  display: block;
+  color: var(--muted);
+}
+.table .number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.status {
+  color: var(--accent);
+}
+.missing {
+  color: var(--danger);
+}
+.scroll {
+  overflow-x: auto;
+}
+.history {
+  margin-top: 32px;
+}
+.ticket {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  padding-block: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.ticket p {
+  margin: 4px 0;
+}
+.ticket small {
+  display: block;
+  color: var(--muted);
+}
+.ticket button {
+  min-height: 44px;
+  flex-shrink: 0;
+}
+.voided {
+  opacity: 0.75;
+}
+.visitors {
+  margin-top: 32px;
+}
+.visitor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.visitor > span {
+  overflow-wrap: anywhere;
+}
+.visitor small {
+  display: block;
+  color: var(--muted);
+}
+.visitor button {
+  flex-shrink: 0;
+}
+.confirmation {
+  padding: 12px 0;
+  color: var(--muted);
+}
+@media (max-width: 420px) {
+  .people {
+    grid-template-columns: 1fr;
+  }
+  .ticket {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .table th,
+  .table td {
+    padding: 10px 8px;
+  }
+}

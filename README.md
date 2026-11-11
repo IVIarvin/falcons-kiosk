@@ -30,6 +30,7 @@ Ces accès sont réservés à la démonstration créée explicitement. Pour affi
 - Comptes avec grade, nom et téléphone ; connexion par mot de passe, récupération avec code temporaire remis par le responsable.
 - Catalogue, panier, prix vérifiés côté serveur, historique personnel et solde. Les reprises réseau réutilisent la même opération.
 - Produits et coûts d'achat, majoration et dérogation manuelle, aperçu des prix avant publication explicite. Recherche de références Open Food Facts avec photo, format et caractéristiques corrigeables ; saisie libre en cas d'absence ou de panne.
+- [Tickets de contrôle](docs/service-tickets.md) réservés aux admins depuis « Servir » sur chaque produit du kiosque ; saisie par personne, annulation et reprise réseau sans double comptage. Visiteurs avec leur seul nom, puis rattachement manuel à un compte inscrit en conservant l'historique. Contrôle des quantités par période en heure suisse, indépendant des ardoises et des classements.
 - Ardoises administratives, paiements partiels, annulations motivées, avoirs et remboursements.
 - Date réelle des règlements, reprise des achats et dépenses après réponse perdue, annulation traçable des dépenses erronées.
 - Marge estimée, encaissements, dépenses et trésorerie distincts ; coûts inconnus visibles et complétables avec une trace.

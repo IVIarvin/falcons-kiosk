@@ -19,6 +19,7 @@ import { useApp } from '@/components/context';
 import { PageTitle, Empty, Dialog, Field, Busy, DownloadLink } from '@/components/ui';
 import { PillerAdminPanel, PillerLibrary } from '@/features/piller/panel';
 import { ProductEditor } from '@/features/catalog/editor';
+import { ServiceControlView } from '@/features/service-tickets/control';
 import { AdminDataView } from '@/features/admin-data/view';
 import { PatchAdminView } from '@/features/patches/view';
 import { ProductImage } from '@/features/catalog/image';
@@ -41,6 +42,8 @@ export function AdminView({ section }: { section: string }) {
   const { state } = useApp();
   if (!state.admin) return <Empty title="Accès réservé au responsable." />;
   switch (section) {
+    case 'service':
+      return <ServiceControlView />;
     case 'patchs':
       return <PatchAdminView />;
     case 'produits':
@@ -762,6 +765,9 @@ function Settings() {
     <>
       <PageTitle title="Réglages" />
       <div className="admin-more-links">
+        <Link className="button secondary" href="/admin/service">
+          Contrôle du service
+        </Link>
         <Link className="button secondary" href="/admin/donnees">
           Données
         </Link>

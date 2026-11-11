@@ -55,3 +55,51 @@ it('libère un panier dont le prix a été définitivement refusé', async () =>
   await expect(durableAction('checkout', 'member', { lines: [] })).rejects.toThrow('Prix changé');
   expect(pendingAction('checkout', 'member')).toBeNull();
 });
+it.each(['success', 'invalid'] as const)(
+  'une ancienne réponse %s ne doit pas effacer une nouvelle opération après reprise',
+  async (oldResponse) => {
+    storage();
+    let finishOld!: (response: Response) => void;
+    let rejectNew!: (error: Error) => void;
+    let attempt = 0;
+    vi.stubGlobal('fetch', async () => {
+      attempt++;
+      if (attempt === 1)
+        return new Promise<Response>((resolve) => {
+          finishOld = resolve;
+        });
+      if (attempt === 2) return Response.json({ ok: true, data: { id: 'ticket-one' } });
+      if (attempt === 3)
+        return new Promise<Response>((_, reject) => {
+          rejectNew = reject;
+        });
+      return Response.json({ ok: true, data: { id: 'ticket-two' } });
+    });
+    const original = durableAction('recordServiceTicket', 'admin', {
+      memberId: 'one',
+      productId: 'beer',
+    }).catch((e) => e);
+    await durableAction('recordServiceTicket', 'admin');
+    const next = durableAction('recordServiceTicket', 'admin', {
+      memberId: 'two',
+      productId: 'beer',
+    });
+    const nextKey = pendingAction('recordServiceTicket', 'admin')!.idempotencyKey;
+    finishOld(
+      oldResponse === 'success'
+        ? Response.json({ ok: true, data: { id: 'ticket-one' } })
+        : Response.json(
+            { ok: false, code: 'INVALID', message: 'Ancienne opération refusée' },
+            { status: 400 },
+          ),
+    );
+    await original;
+    expect(pendingAction('recordServiceTicket', 'admin')?.idempotencyKey).toBe(nextKey);
+    rejectNew(new Error('réponse perdue'));
+    await expect(next).rejects.toThrow();
+    expect(pendingAction('recordServiceTicket', 'admin')?.idempotencyKey).toBe(nextKey);
+    await expect(durableAction('recordServiceTicket', 'admin')).resolves.toEqual({
+      id: 'ticket-two',
+    });
+  },
+);

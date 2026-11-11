@@ -32,3 +32,9 @@ Configurer enfin les sauvegardes et leur rétention avant le pilote. Une sauvega
 La commande de build est `pnpm build`. La base ne doit pas être nécessaire à la compilation, mais elle est requise pour utiliser l'application en production. Aucun repli vers un fichier local n'est autorisé sur Vercel.
 
 Après validation du déploiement, utiliser sa version de production comme référence pour le QR. Une modification du domaine nécessite une redirection conservée ou une réimpression. Conserver une sauvegarde avant toute migration ultérieure. Un retour de version applicative ne revient pas automatiquement sur les opérations financières de la base.
+
+## Mise à jour des tickets de service
+
+Avant de mettre en service cette version sur une base existante, conserver une sauvegarde et lancer `pnpm db:migrate` avec la connexion PostgreSQL de l'environnement cible. La migration additive `009_service_tickets.sql` crée `service_visitors` et `service_tickets`, sans modifier les consommations financières. Le build seul n'applique pas cette migration. Les sauvegardes intègrent les deux tables ; les anciennes sauvegardes sans tickets restent restaurables dans une base vide.
+
+Vérifier avec un admin l'action « Servir » sur un produit, la création d'un visiteur par son seul nom et son rattachement manuel à un compte inscrit. Vérifier avec un membre l'absence des commandes de service. Les tickets et les rattachements n'ajoutent rien à l'ardoise.

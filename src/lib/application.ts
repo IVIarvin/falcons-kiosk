@@ -1,3 +1,11 @@
+import {
+  recordServiceTicket,
+  voidServiceTicket,
+  getServiceBoard,
+  getServicePeople,
+  createServiceVisitor,
+  mergeServiceVisitor,
+} from '@/features/service-tickets/service';
 import { z } from 'zod';
 import type { Database } from '@/lib/db';
 import { assert } from '@/lib/errors';
@@ -129,6 +137,18 @@ export async function dispatch(
 ): Promise<unknown> {
   assert(user.active, 'Compte désactivé.', 'AUTH', 401);
   switch (action) {
+    case 'recordServiceTicket':
+      return recordServiceTicket(db, user, input);
+    case 'voidServiceTicket':
+      return voidServiceTicket(db, user, input);
+    case 'serviceBoard':
+      return getServiceBoard(db, user, input);
+    case 'servicePeople':
+      return getServicePeople(db, user);
+    case 'createServiceVisitor':
+      return createServiceVisitor(db, user, input);
+    case 'mergeServiceVisitor':
+      return mergeServiceVisitor(db, user, input);
     case 'freeCheckout':
       return recordFreeEntry(db, user, input);
     case 'createPatchCampaign':

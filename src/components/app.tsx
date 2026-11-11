@@ -35,6 +35,7 @@ const memberLinks = [
 ];
 const adminLinks = [
   { href: '/admin', label: 'Ardoises', Icon: LayoutGrid },
+  { href: '/admin/service', label: 'Service', Icon: ClipboardList },
   { href: '/admin/produits', label: 'Produits', Icon: Package },
   { href: '/admin/achats', label: 'Achats', Icon: ClipboardList },
   { href: '/admin/finance', label: 'Finances', Icon: ChartNoAxesCombined },

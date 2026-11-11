@@ -9,6 +9,27 @@ export const dataTables = {
     columns: ['name', 'category', 'unit', 'price_cents', 'cost_micros', 'active', 'id'],
     order: 'created_at DESC,id',
   },
+  service_visitors: {
+    label: 'Visiteurs du service',
+    columns: ['id', 'name', 'created_at', 'merged_user_id', 'merged_at'],
+    order: 'created_at DESC,id',
+  },
+  service_tickets: {
+    label: 'Tickets de service',
+    columns: [
+      'id',
+      'member_id',
+      'visitor_id',
+      'recipient_name',
+      'product_name',
+      'quantity',
+      'actor_id',
+      'created_at',
+      'voided_at',
+      'void_reason',
+    ],
+    order: 'created_at DESC,id',
+  },
   consumptions: {
     label: 'Consommations',
     columns: ['id', 'user_id', 'origin', 'total_cents', 'created_at', 'reversed_at'],
@@ -84,6 +105,8 @@ export const resetTables = [
   'patch_images',
   'users',
   'products',
+  'service_visitors',
+  'service_tickets',
   'patch_reservations',
   'extra_requests',
   'consumption_removals',
@@ -103,6 +126,8 @@ export const resetTables = [
   'admin_reset_runs',
 ] as const;
 export const deletionOrder = [
+  'service_tickets',
+  'service_visitors',
   'patch_images',
   'patch_reservations',
   'extra_requests',

@@ -29,6 +29,34 @@ const columns: Record<string, string[]> = {
     'available',
     'created_at',
   ],
+  service_visitors: [
+    'id',
+    'name',
+    'actor_id',
+    'idempotency_key',
+    'request_hash',
+    'created_at',
+    'merged_user_id',
+    'merged_at',
+    'merged_by',
+  ],
+  service_tickets: [
+    'id',
+    'member_id',
+    'visitor_id',
+    'recipient_name',
+    'product_id',
+    'product_name',
+    'unit',
+    'quantity',
+    'actor_id',
+    'idempotency_key',
+    'request_hash',
+    'created_at',
+    'voided_at',
+    'voided_by',
+    'void_reason',
+  ],
   purchases: [
     'idempotency_key',
     'request_hash',
@@ -154,6 +182,8 @@ export async function restoreBackup(db: Database, input: unknown) {
   for (const name of Object.keys(columns))
     assert(
       ([
+        'service_visitors',
+        'service_tickets',
         'piller_quotes',
         'consumption_removals',
         'patch_campaigns',

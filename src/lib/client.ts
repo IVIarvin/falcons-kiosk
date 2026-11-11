@@ -73,9 +73,15 @@ export async function durableAction<T>(
     data = { ...input, idempotencyKey: crypto.randomUUID() };
     sessionStorage.setItem(key, JSON.stringify(data));
   }
+  // An earlier request may finish after its replay and a newer operation.
+  // Never remove that newer operation's recovery key.
+  const clearCompleted = () => {
+    if (pendingAction(action, userId)?.idempotencyKey === data.idempotencyKey)
+      sessionStorage.removeItem(key);
+  };
   try {
     const result = await api<T>(action, data);
-    sessionStorage.removeItem(key);
+    clearCompleted();
     return result;
   } catch (e) {
     if (
@@ -83,7 +89,7 @@ export async function durableAction<T>(
       [400, 409].includes(e.status) &&
       ['INVALID', 'PRICE_CHANGED'].includes(e.code)
     )
-      sessionStorage.removeItem(key);
+      clearCompleted();
     throw e;
   }
 }
