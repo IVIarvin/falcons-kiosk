@@ -11,3 +11,5 @@ Demandes confirmées : classement buveurs limité aux boissons alcoolisées ; ob
 5. Tests adaptés, types, compilation, contrôle mobile/ordinateur et revue finale. Sauvegarde avant migration, publication du commit exact et contrôles en lecture en production. Aucun achat, vote, reset ou campagne fictive en production.
 
 Propositions UX à soumettre après corrections : panier consultable même sous filtre, lien vers l’ardoise après achat, séparation des précommandes actives et de l’historique, résumé personnel de réservation plus haut.
+
+Les cinq étapes sont terminées. Validation et preuve de publication consignées dans `docs/review-2026-11-14.md`. Version commune publiée `a0aa11c246c23481a4277a7598c46fd6510a6c0e`, 145 tests et compilation réussis, contrôles connectés en production passés après migration010 et finalisation. Les suggestions/votes restent explicitement reportés.
