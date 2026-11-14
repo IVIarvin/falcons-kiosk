@@ -12,3 +12,5 @@ La passe conserve les parcours, les règles financières et l’identité RAVIT.
 - Classements : périmètre alcool explicite, états vides adaptés à la période et au classement.
 
 Validation : test RED du raccourci reçu→ardoise puis parcours GREEN avec montant conservé ; cinq parcours Chrome vérifiés, dont reprise d’achat, patchs, classement et sélecteur d’avatar. Sept surfaces inspectées avec données en mémoire à 320/390/1440 ; filtre des avoirs et dialogue d’installation vérifiés. Revue Sol6.1 medium sans blocage. Aucune mutation métier de production pendant ces tests.
+
+Publication : commit `cc531494c97a83c1a961be667a15c658fe65d8e7`, Vercel `dpl_8ggkz56NRf1MYpUKH9h2aHfFJ4gP`, READY production. 148 tests et build/TypeScript réussis. Contrôle connecté en ligne : filtre des soldes exact, tous les comptes affichés par défaut, description QR correcte, exports alignés, installation au clavier avec retour du focus, textes patchs/alcool présents, écrans320/390/1440 sans débordement ni erreur JavaScript. Zéro écritureAPI pendant la vérification, session technique supprimée.

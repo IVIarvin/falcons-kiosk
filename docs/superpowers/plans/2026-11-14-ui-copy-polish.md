@@ -7,3 +7,5 @@ Périmètre demandé : clarifier et raccourcir les textes, conserver les parcour
 - Raccourcir les aides redondantes dans les patchs, articles libres, service et documents. Garder les conséquences financières et les avertissements de sauvegarde.
 - Rendre le reçu d’achat actionnable avec retour au kiosque et accès à l’ardoise existante. Garder la confirmation d’achat et la reprise des opérations inchangées.
 - Vérifier le rendu et les parcours à 320/390/1440, les tests adaptés, types/build et revue avant publication. Aucun achat ni autre mutation métier fictive en production.
+
+Passe terminée et publiée : voir `docs/ui-copy-polish.md` pour le détail et les preuves de validation du commit `cc531494c97a83c1a961be667a15c658fe65d8e7`.
