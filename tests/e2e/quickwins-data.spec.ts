@@ -108,6 +108,13 @@ test('données et préparation du reset avec sauvegarde, confirmation puis recon
       confirmation: 'RESET FALCONS',
       backupDownloaded: true,
       password: 'test-reset-confirmation',
+      selection: {
+        operations: true,
+        members: true,
+        products: false,
+        patches: false,
+        settings: false,
+      },
     });
     return route.fulfill({
       headers: { 'Set-Cookie': 'falcons_session=; Path=/; Max-Age=0; HttpOnly' },
@@ -128,6 +135,19 @@ test('données et préparation du reset avec sauvegarde, confirmation puis recon
   expect((await download).suggestedFilename()).toMatch(/ravit-sauvegarde/);
   const modal = page.getByRole('dialog', { name: 'Réinitialiser le kiosque' });
   await expect(modal).toContainText('2 comptes admin conservés');
+  const operations = modal.getByRole('checkbox', { name: /^Opérations et réservations/ });
+  const members = modal.getByRole('checkbox', { name: /^Comptes membres/ });
+  const products = modal.getByRole('checkbox', { name: /^Produits/ });
+  await operations.uncheck();
+  await expect(members).not.toBeChecked();
+  await products.check();
+  await expect(operations).toBeChecked();
+  await products.uncheck();
+  await members.check();
+  await expect(modal.getByRole('checkbox', { name: 'Produits', exact: false })).not.toBeChecked();
+  await expect(
+    modal.getByRole('checkbox', { name: 'Patchs et images', exact: false }),
+  ).not.toBeChecked();
   await expect(modal.getByRole('button', { name: 'Confirmer la remise à zéro' })).toBeDisabled();
   await modal.getByLabel('J’ai enregistré la sauvegarde.').check();
   await modal.getByLabel('Ton mot de passe admin').fill('test-reset-confirmation');

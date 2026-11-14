@@ -8,8 +8,10 @@ import { formatCHF } from '@/lib/money';
 import { appFilePrefix } from '@/lib/brand';
 import type { AdminDataResult, ResetPreparation } from './service';
 import styles from './view.module.css';
+import { defaultResetSelection, resetChoices, type ResetSelection } from './reset-options';
 type Ticket = Pick<ResetPreparation, 'token' | 'counts' | 'adminsPreserved'> & {
   backupDownloaded: boolean;
+  selection: ResetSelection;
 };
 const labels: Record<string, string> = {
   id: 'ID',
@@ -104,7 +106,13 @@ export function AdminDataView() {
         !Object.values(stored.counts).every((v) => typeof v === 'number' && v >= 0)
       )
         return null;
-      return stored;
+      const validSelection =
+        stored.selection &&
+        resetChoices.every((choice) => typeof stored.selection[choice.key] === 'boolean');
+      return {
+        ...stored,
+        selection: validSelection ? stored.selection : { ...defaultResetSelection },
+      };
     } catch {
       return null;
     }
@@ -148,6 +156,7 @@ export function AdminDataView() {
         counts: data.counts,
         adminsPreserved: data.adminsPreserved,
         backupDownloaded: false,
+        selection: { ...defaultResetSelection },
       });
       const url = URL.createObjectURL(
         new Blob([JSON.stringify(data.backup, null, 2)], { type: 'application/json' }),
@@ -177,6 +186,7 @@ export function AdminDataView() {
           password: String(fields.get('password')),
           confirmation: String(fields.get('confirmation')),
           backupDownloaded: ticket.backupDownloaded,
+          selection: ticket.selection,
         },
       });
       remember(null);
@@ -322,7 +332,7 @@ export function AdminDataView() {
         <Database size={24} />
         <div>
           <h2>Repartir de zéro</h2>
-          <p>Tous les admins sont conservés. Le reste est effacé.</p>
+          <p>Choisis les données à effacer. Tous les admins sont conservés.</p>
           <small>La sauvegarde contient des données privées. Conserve-la en lieu sûr.</small>
         </div>
         <button className="button secondary" disabled={working} onClick={() => void prepare()}>
@@ -347,7 +357,10 @@ export function AdminDataView() {
               {ticket.adminsPreserved > 1 ? 's' : ''}.
             </strong>
           </p>
-          <p>Produits, membres, opérations, patchs et réglages personnalisés seront effacés.</p>
+          <p>
+            Produits et modèles de patchs sont conservés par défaut. Seules les cases cochées seront
+            nettoyées.
+          </p>
           <dl className={styles.counts}>
             {[
               ['Produits', ticket.counts.products],
@@ -362,6 +375,38 @@ export function AdminDataView() {
             ))}
           </dl>
           <form onSubmit={reset}>
+            <fieldset className={styles.choices} disabled={working}>
+              <legend>À effacer</legend>
+              {resetChoices.map((choice) => (
+                <label key={choice.key}>
+                  <input
+                    type="checkbox"
+                    checked={ticket.selection[choice.key]}
+                    onChange={(e) => {
+                      const selection = { ...ticket.selection, [choice.key]: e.target.checked };
+                      if (
+                        e.target.checked &&
+                        (choice.key === 'members' || choice.key === 'products')
+                      )
+                        selection.operations = true;
+                      if (!e.target.checked && choice.key === 'operations') {
+                        selection.members = false;
+                        selection.products = false;
+                      }
+                      remember({ ...ticket, selection });
+                    }}
+                  />
+                  <span>
+                    {choice.label}
+                    <small>{choice.detail}</small>
+                  </span>
+                </label>
+              ))}
+              <p>
+                Si les membres sont effacés, les patchs conservés sont rattachés à ton compte admin.
+                Leurs images restent disponibles.
+              </p>
+            </fieldset>
             <label className="check-line">
               <input
                 type="checkbox"
@@ -398,7 +443,11 @@ export function AdminDataView() {
             )}
             <button
               className={`button full ${styles.danger}`}
-              disabled={working || !ticket.backupDownloaded}
+              disabled={
+                working ||
+                !ticket.backupDownloaded ||
+                !Object.values(ticket.selection).some(Boolean)
+              }
             >
               {working ? <Busy /> : 'Confirmer la remise à zéro'}
             </button>

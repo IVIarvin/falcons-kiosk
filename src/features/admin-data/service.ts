@@ -107,6 +107,20 @@ export async function resetApplicationData(db: Database, actor: Member, input: u
       password: z.string().min(1).max(128),
       confirmation: z.literal('RESET FALCONS'),
       backupDownloaded: z.literal(true),
+      selection: z
+        .object({
+          operations: z.boolean(),
+          members: z.boolean(),
+          products: z.boolean(),
+          patches: z.boolean(),
+          settings: z.boolean(),
+        })
+        .strict()
+        .refine((s) => Object.values(s).some(Boolean), 'Sélectionne au moins un élément.')
+        .refine(
+          (s) => s.operations || (!s.members && !s.products),
+          'Le nettoyage des membres ou produits nécessite celui des opérations.',
+        ),
     })
     .parse(input);
   await verifyAdminPassword(db, actor, p.password);
@@ -174,13 +188,63 @@ export async function resetApplicationData(db: Database, actor: Member, input: u
       'RESET_CHANGED',
       409,
     );
+    const remove = new Set<string>();
+    if (p.selection.operations)
+      for (const table of [
+        'service_tickets',
+        'service_visitors',
+        'patch_reservations',
+        'extra_requests',
+        'consumption_removals',
+        'consumption_lines',
+        'consumptions',
+        'payments',
+        'purchases',
+        'expenses',
+        'audit',
+      ])
+        remove.add(table);
+    if (p.selection.products) remove.add('products');
+    if (p.selection.patches) {
+      for (const table of ['patch_images', 'patch_reservations', 'patch_campaigns'])
+        remove.add(table);
+      if (!p.selection.operations)
+        await tx.query(
+          "DELETE FROM extra_requests WHERE action IN ('reservePatch','confirmPatchOrder')",
+        );
+    }
+    if (p.selection.settings) remove.add('piller_quotes');
+    for (const table of [
+      'sessions',
+      'reset_tokens',
+      'auth_attempts',
+      'product_lookup_cache',
+      'product_lookup_limits',
+    ])
+      remove.add(table);
     for (const table of deletionOrder)
-      if (existing.has(table)) await tx.query(`DELETE FROM ${table}`);
-    await tx.query("DELETE FROM users WHERE role<>'admin'");
-    await tx.query('UPDATE settings SET markup_basis_points=0,piller_enabled=false WHERE id=1');
+      if (existing.has(table) && remove.has(table)) await tx.query(`DELETE FROM ${table}`);
+    if (p.selection.members) {
+      if (!p.selection.patches) {
+        for (const [table, column] of [
+          ['patch_campaigns', 'actor_id'],
+          ['patch_campaigns', 'ordered_by'],
+          ['patch_images', 'uploaded_by'],
+        ])
+          if (existing.has(table))
+            await tx.query(
+              `UPDATE ${table} SET ${column}=$1 WHERE ${column} IN (SELECT id FROM users WHERE role<>'admin')`,
+              [actor.id],
+            );
+      }
+      await tx.query("DELETE FROM users WHERE role<>'admin'");
+    }
+    if (p.selection.settings)
+      await tx.query('UPDATE settings SET markup_basis_points=0,piller_enabled=false WHERE id=1');
     await tx.query('DELETE FROM admin_reset_runs WHERE id<>$1', [ticket.id]);
     const result = {
       resetAt: new Date().toISOString(),
+      selection: p.selection,
       adminsPreserved: tables.users.filter((u) => (u as { role: string }).role === 'admin').length,
     };
     await tx.query('UPDATE admin_reset_runs SET completed_at=now(),result=$2 WHERE id=$1', [

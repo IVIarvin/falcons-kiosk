@@ -298,6 +298,7 @@ export function ServiceControlView() {
           <form onSubmit={(e) => void merge(e)}>
             <Field label="Compte inscrit">
               <select
+                aria-label="Compte inscrit"
                 required
                 value={selectedMember}
                 onChange={(e) => setSelectedMember(e.target.value)}

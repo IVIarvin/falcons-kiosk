@@ -393,6 +393,7 @@ describe('tickets de service indépendants', () => {
       password,
       confirmation: 'RESET FALCONS',
       backupDownloaded: true,
+      selection: { operations: true, members: true, products: true, patches: true, settings: true },
     });
     expect(await db.query('SELECT * FROM service_tickets')).toEqual([]);
     expect(await db.query("SELECT * FROM users WHERE role='admin'")).toHaveLength(1);

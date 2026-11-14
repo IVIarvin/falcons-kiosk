@@ -96,6 +96,40 @@
   color: #fff;
   border-color: var(--danger);
 }
+.choices {
+  border: 1px solid var(--line);
+  padding: 16px;
+  margin: 0 0 24px;
+  min-width: 0;
+}
+.choices legend {
+  padding: 0 8px;
+  font-weight: 600;
+}
+.choices label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+.choices input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+.choices small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.choices p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 12px;
+}
 .danger:hover:not(:disabled) {
   background: #854338;
 }
