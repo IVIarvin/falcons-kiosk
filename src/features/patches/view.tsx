@@ -86,7 +86,7 @@ function CampaignCopy({ campaign: c }: { campaign: PatchCampaign }) {
   );
 }
 function CampaignProgress({ campaign: c }: { campaign: PatchCampaign }) {
-  const reached = c.totalCents >= c.fundingGoalCents;
+  const reached = c.totalQuantity >= c.minimumQuantity;
   return (
     <section className={styles.funding} aria-label={`Objectif de précommandes ${c.name}`}>
       <div className={styles.fundingCounts}>
@@ -97,18 +97,26 @@ function CampaignProgress({ campaign: c }: { campaign: PatchCampaign }) {
           {c.reservationCount} réservation{c.reservationCount > 1 ? 's' : ''}
         </span>
       </div>
-      <progress
-        value={Math.min(c.totalCents, c.fundingGoalCents)}
-        max={c.fundingGoalCents}
-        aria-label="Progression des précommandes"
-        aria-valuetext={`${formatCHF(c.totalCents)} sur ${formatCHF(c.fundingGoalCents)}`}
-      />
-      <div className={styles.fundingAmounts}>
-        <strong>
-          {formatCHF(c.totalCents)} / {formatCHF(c.fundingGoalCents)}
-        </strong>
-        <span>{reached ? 'Objectif atteint' : 'Objectif minimum'}</span>
-      </div>
+      {c.status === 'open' && (
+        <>
+          <progress
+            value={Math.min(c.totalQuantity, c.minimumQuantity)}
+            max={c.minimumQuantity}
+            aria-label="Progression des précommandes"
+            aria-valuetext={`${c.totalQuantity} sur ${c.minimumQuantity} patchs`}
+          />
+          <div className={styles.fundingAmounts}>
+            <strong>
+              {c.totalQuantity} / {c.minimumQuantity} patchs
+            </strong>
+            <span>{reached ? 'Objectif atteint' : 'Objectif minimum'}</span>
+          </div>
+        </>
+      )}
+      <p className={styles.help}>
+        {c.status === 'ordered' ? 'Montant confirmé' : 'Montant estimé'} : {formatCHF(c.totalCents)}
+        .
+      </p>
       {c.status === 'open' && (
         <p className={styles.help}>
           Total estimé. Le responsable ajuste le prix selon la quantité et confirme le prix
@@ -279,7 +287,7 @@ export function PatchAdminView() {
         name: String(data.get('name')),
         description: String(data.get('description') ?? ''),
         priceCents: centsFromInput(String(data.get('price'))),
-        fundingGoalCents: centsFromInput(String(data.get('goal'))),
+        minimumQuantity: Number(data.get('goal')),
         deadline: String(data.get('deadline')),
       });
       const failures: string[] = [];
@@ -335,7 +343,7 @@ export function PatchAdminView() {
             campaignId: confirming.id,
             expectedTotalQuantity: confirming.totalQuantity,
             expectedPriceCents: confirming.estimatedPriceCents,
-            expectedFundingGoalCents: confirming.fundingGoalCents,
+            expectedMinimumQuantity: confirming.minimumQuantity,
             finalPriceCents: centsFromInput(finalPrice),
           },
     );
@@ -350,7 +358,7 @@ export function PatchAdminView() {
       await run('updatePatchEstimate', {
         campaignId: editing.id,
         priceCents: centsFromInput(String(data.get('price'))),
-        fundingGoalCents: centsFromInput(String(data.get('goal'))),
+        minimumQuantity: Number(data.get('goal')),
       });
       setEditing(null);
     } catch (e) {
@@ -509,10 +517,13 @@ export function PatchAdminView() {
             <Field label="Prix estimé par patch (CHF)">
               <input name="price" inputMode="decimal" required disabled={createWorking} />
             </Field>
-            <Field label="Objectif minimum (CHF)">
+            <Field label="Quantité minimum de patchs">
               <input
                 name="goal"
-                inputMode="decimal"
+                type="number"
+                min={1}
+                max={1000000}
+                step={1}
                 defaultValue="100"
                 required
                 disabled={createWorking}
@@ -568,11 +579,14 @@ export function PatchAdminView() {
                 required
               />
             </Field>
-            <Field label="Objectif minimum (CHF)">
+            <Field label="Quantité minimum de patchs">
               <input
                 name="goal"
-                inputMode="decimal"
-                defaultValue={(editing.fundingGoalCents / 100).toString()}
+                type="number"
+                min={1}
+                max={1000000}
+                step={1}
+                defaultValue={editing.minimumQuantity}
                 required
               />
             </Field>
@@ -610,9 +624,9 @@ export function PatchAdminView() {
               <strong>{finalTotal === null ? 'À renseigner' : formatCHF(finalTotal)}</strong>
             </p>
             <p className={styles.help}>
-              Objectif minimum : {formatCHF(confirming.fundingGoalCents)}.
-              {finalTotal !== null && finalTotal < confirming.fundingGoalCents
-                ? ' Le total au prix définitif est inférieur à cet objectif.'
+              Quantité minimum : {confirming.minimumQuantity} patchs.
+              {confirming.totalQuantity < confirming.minimumQuantity
+                ? ' La quantité réservée est inférieure à ce minimum.'
                 : ''}
             </p>
             <p className={styles.help}>
@@ -629,7 +643,7 @@ export function PatchAdminView() {
               disabled={
                 order.working ||
                 finalTotal === null ||
-                (!order.pending && finalTotal < confirming.fundingGoalCents)
+                (!order.pending && confirming.totalQuantity < confirming.minimumQuantity)
               }
             >
               {order.working ? (

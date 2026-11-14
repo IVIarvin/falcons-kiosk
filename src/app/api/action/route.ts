@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getDatabase } from '@/lib/db';
 import { DomainError, assert } from '@/lib/errors';
 import {
-  register,
+  registerAndLogin,
   login,
   logout,
   resolveSession,
@@ -51,8 +51,11 @@ export async function POST(req: NextRequest) {
     const db = await getDatabase();
     const token = req.cookies.get(sessionCookie)?.value;
     if (action === 'login' || action === 'register') {
-      if (action === 'register') await register(db, data);
-      const session = await login(db, data, req.headers.get('x-real-ip') ?? 'local');
+      const clientKey = req.headers.get('x-real-ip') ?? 'local';
+      const session =
+        action === 'register'
+          ? await registerAndLogin(db, data, clientKey)
+          : await login(db, data, clientKey);
       const response = NextResponse.json(
         { ok: true, data: { user: session.user } },
         { headers: { 'Cache-Control': 'no-store' } },

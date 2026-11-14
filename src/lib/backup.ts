@@ -83,6 +83,7 @@ const columns: Record<string, string[]> = {
     'reason',
   ],
   consumption_lines: [
+    'is_alcoholic',
     'removed_quantity',
     'id',
     'consumption_id',
@@ -129,6 +130,7 @@ const columns: Record<string, string[]> = {
     'void_reason',
   ],
   patch_campaigns: [
+    'minimum_quantity',
     'funding_goal_cents',
     'final_price_cents',
     'id',
@@ -195,6 +197,18 @@ export async function restoreBackup(db: Database, input: unknown) {
         Array.isArray(backup.tables[name]),
       `Table absente : ${name}.`,
     );
+  const products = new Map(
+    ((backup.tables.products ?? []) as Record<string, unknown>[]).map((p) => [p.id, p]),
+  );
+  const alcoholicFree = new Set(
+    ((backup.tables.audit ?? []) as Record<string, unknown>[])
+      .filter(
+        (a) =>
+          a.action === 'free-checkout' &&
+          (a.after_data as { category?: string } | null)?.category === 'Boissons alcoolisées',
+      )
+      .map((a) => a.reference_id),
+  );
   await db.transaction(async (tx) => {
     const [{ count }] = await tx.query<{ count: string }>('SELECT count(*) AS count FROM users');
     assert(Number(count) === 0, 'La restauration exige une base vide.');
@@ -205,19 +219,27 @@ export async function restoreBackup(db: Database, input: unknown) {
         const values = fields.map((field) => {
           const value =
             row[field] ??
-            (name === 'products' && field === 'details'
-              ? {}
-              : name === 'patch_campaigns' && field === 'funding_goal_cents'
-                ? 10000
-                : name === 'patch_campaigns' &&
-                    field === 'final_price_cents' &&
-                    row.status === 'ordered'
-                  ? (row.price_cents ?? null)
-                  : name === 'consumptions' && field === 'origin'
-                    ? 'kiosk'
-                    : name === 'consumption_lines' && field === 'removed_quantity'
-                      ? 0
-                      : null);
+            (name === 'consumption_lines' && field === 'is_alcoholic'
+              ? !!row.is_beverage &&
+                (products.get(row.product_id)?.category === 'Boissons alcoolisées' ||
+                  (products.get(row.product_id)?.details as { alcohol?: string } | undefined)
+                    ?.alcohol === 'present' ||
+                  alcoholicFree.has(row.consumption_id))
+              : name === 'patch_campaigns' && field === 'minimum_quantity'
+                ? 100
+                : name === 'products' && field === 'details'
+                  ? {}
+                  : name === 'patch_campaigns' && field === 'funding_goal_cents'
+                    ? 10000
+                    : name === 'patch_campaigns' &&
+                        field === 'final_price_cents' &&
+                        row.status === 'ordered'
+                      ? (row.price_cents ?? null)
+                      : name === 'consumptions' && field === 'origin'
+                        ? 'kiosk'
+                        : name === 'consumption_lines' && field === 'removed_quantity'
+                          ? 0
+                          : null);
           return (name === 'products' && field === 'details') ||
             (name === 'extra_requests' && field === 'result') ||
             (name === 'audit' &&

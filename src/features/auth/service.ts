@@ -89,6 +89,16 @@ export async function login(db: Database, input: unknown, clientKey: string) {
     ? await passwordMatches(data.password, user.password_hash)
     : await passwordMatches(data.password, await passwordHash('dummy-password'));
   assert(user?.active && valid, 'Téléphone ou mot de passe incorrect.', 'AUTH', 401);
+  return createSession(db, user);
+}
+export async function registerAndLogin(db: Database, input: unknown, clientKey: string) {
+  const data = z.object({ phone: z.string().max(35) }).parse(input);
+  // Attempts must survive a rejected registration or a failed account/session transaction.
+  await throttle(db, `ip:${clientKey}`);
+  await throttle(db, `phone:${normalizePhone(data.phone)}`);
+  return db.transaction(async (tx) => createSession(tx, await register(tx, input)));
+}
+async function createSession(db: Database, user: Member) {
   const token = randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 30 * 86400000);
   await db.query('INSERT INTO sessions(token_hash,user_id,expires_at) VALUES($1,$2,$3)', [
@@ -175,6 +185,7 @@ export async function changePassword(db: Database, user: Member, input: unknown)
       await passwordHash(data.password),
     ]);
     await tx.query('DELETE FROM sessions WHERE user_id=$1', [user.id]);
+    await tx.query('UPDATE reset_tokens SET used=true WHERE user_id=$1', [user.id]);
   });
 }
 export async function issueReset(db: Database, actor: Member, userId: string) {

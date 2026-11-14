@@ -97,7 +97,7 @@ export async function checkout(
     );
     for (const { product, quantity } of resolved)
       await tx.query(
-        'INSERT INTO consumption_lines(id,consumption_id,product_id,product_name,unit,quantity,price_cents,cost_micros,is_beverage) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+        'INSERT INTO consumption_lines(id,consumption_id,product_id,product_name,unit,quantity,price_cents,cost_micros,is_beverage,is_alcoholic) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
         [
           randomUUID(),
           id,
@@ -108,6 +108,8 @@ export async function checkout(
           product.price_cents,
           product.cost_micros,
           product.is_beverage,
+          product.is_beverage &&
+            (product.category === 'Boissons alcoolisées' || product.details?.alcohol === 'present'),
         ],
       );
     return {

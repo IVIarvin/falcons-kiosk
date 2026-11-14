@@ -35,8 +35,8 @@ beforeAll(async () => {
   });
   productId = (
     await saveProduct(db, admin, {
-      name: 'Eau',
-      category: 'Boissons',
+      name: 'Bière',
+      category: 'Boissons alcoolisées',
       unit: 'pièce',
       is_beverage: true,
       price_cents: 200,
@@ -154,7 +154,9 @@ it('restaure les anciennes sauvegardes avec zéro retrait', async () => {
   const restored = await createTestDatabase();
   try {
     await restoreBackup(restored, backup);
-    expect(await restored.query("SELECT id FROM consumptions WHERE origin<>'kiosk'")).toHaveLength(0);
+    expect(await restored.query("SELECT id FROM consumptions WHERE origin<>'kiosk'")).toHaveLength(
+      0,
+    );
     expect(
       await restored.query('SELECT id FROM consumption_lines WHERE removed_quantity<>0'),
     ).toHaveLength(0);

@@ -69,22 +69,28 @@ export type ExpenseRow = {
   void_reason: string | null;
 };
 export async function getSnapshot(db: Database, user: Member) {
-  const [settings] = await db.query<{ piller_enabled: boolean; markup_basis_points: number }>(
-    'SELECT * FROM settings WHERE id=1',
-  );
-  const products = await getCatalog(db, user.role === 'admin');
-  const ledger = await getAccountLedger(db, user);
-  const community = await getCommunity(db, user);
+  // These independent reads use at most the four connections available in the pool.
+  const [[settings], products, ledger, community] = await Promise.all([
+    db.query<{ piller_enabled: boolean; markup_basis_points: number }>(
+      'SELECT * FROM settings WHERE id=1',
+    ),
+    getCatalog(db, user.role === 'admin'),
+    getAccountLedger(db, user),
+    getCommunity(db, user),
+  ]);
+  const accounts = user.role === 'admin' ? await getAccounts(db, user) : undefined;
+  const week = weekBoundsZurich(new Date());
   const admin =
     user.role === 'admin'
       ? {
-          accounts: await getAccounts(db, user),
-          financial: await getFinancialSummary(db, user),
+          accounts: accounts!,
+          financial: await getFinancialSummary(db, user, undefined, undefined, accounts),
           weekFinancial: await getFinancialSummary(
             db,
             user,
-            weekBoundsZurich(new Date()).start.toISOString(),
-            weekBoundsZurich(new Date()).end.toISOString(),
+            week.start.toISOString(),
+            week.end.toISOString(),
+            accounts,
           ),
           purchases: await db.query<ProcurementRow>(
             'SELECT p.id,p.product_id,p.quantity,p.total_cents,p.purchased_at,r.name AS product_name FROM purchases p JOIN products r ON r.id=p.product_id ORDER BY p.purchased_at DESC',
@@ -110,7 +116,10 @@ export async function getSnapshot(db: Database, user: Member) {
             markupBasisPoints: settings.markup_basis_points,
             pillerEnabled: settings.piller_enabled,
           },
-          priceChanges: await previewAutomaticPrices(db, user),
+          priceChanges: await previewAutomaticPrices(db, user, {
+            products,
+            markupBasisPoints: settings.markup_basis_points,
+          }),
           canonicalUrl: canonicalUrl(),
           pillerQuotes: await getPillerLibrary(db, user),
         }

@@ -168,18 +168,23 @@ export async function correctPurchase(db: Database, actor: Member, input: unknow
     await refreshCost(tx, p.productId);
   });
 }
-export async function previewAutomaticPrices(db: Database, actor: Member): Promise<PriceChange[]> {
+export async function previewAutomaticPrices(
+  db: Database,
+  actor: Member,
+  snapshot?: { products: Product[]; markupBasisPoints: number },
+): Promise<PriceChange[]> {
   requireAdmin(actor);
-  const [settings] = await db.query<{ markup_basis_points: number }>(
-    'SELECT * FROM settings WHERE id=1',
-  );
-  return (await getCatalog(db, true))
+  const markupBasisPoints = snapshot
+    ? snapshot.markupBasisPoints
+    : (await db.query<{ markup_basis_points: number }>('SELECT * FROM settings WHERE id=1'))[0]
+        .markup_basis_points;
+  return (snapshot?.products ?? (await getCatalog(db, true)))
     .filter((p) => p.active && p.price_mode === 'auto' && p.cost_micros !== null)
     .map((p) => ({
       id: p.id,
       name: p.name,
       oldPriceCents: p.price_cents,
-      newPriceCents: priceFromCost(p.cost_micros!, settings.markup_basis_points),
+      newPriceCents: priceFromCost(p.cost_micros!, markupBasisPoints),
     }))
     .filter((p) => p.oldPriceCents !== p.newPriceCents);
 }

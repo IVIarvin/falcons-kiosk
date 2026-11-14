@@ -57,7 +57,9 @@ export function CrewView() {
         )}
       </div>
       <p className="muted small">
-        {mode === 'drinks' ? 'Par nombre de boissons.' : 'Par montant acheté, pas par paiement.'}
+        {mode === 'drinks'
+          ? 'Par nombre de boissons alcoolisées, cette semaine.'
+          : 'Par montant acheté, pas par paiement.'}
       </p>
       <section className="crew-personal" aria-label="Ta place dans la section">
         <div className="crew-position">

@@ -20,7 +20,7 @@ it('compte les boissons et contributions, conserve la réplique et recalcule les
     const p = await saveProduct(db, u, {
       name: 'Boisson',
       unit: '50 cl',
-      category: 'Boissons',
+      category: 'Boissons alcoolisées',
       is_beverage: true,
       price_cents: 200,
       price_mode: 'manual',
@@ -87,9 +87,9 @@ it('réattribue le succès d’une semaine terminée après correction sans perd
       password: 'falcons-password',
     });
     const product = await saveProduct(db, admin, {
-      name: 'Eau',
+      name: 'Bière',
       unit: '50 cl',
-      category: 'Boissons',
+      category: 'Boissons alcoolisées',
       is_beverage: true,
       price_cents: 100,
       price_mode: 'manual',

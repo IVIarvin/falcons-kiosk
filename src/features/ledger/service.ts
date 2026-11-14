@@ -55,13 +55,30 @@ export async function getAccountLedger(
     voided_at: string | null;
     reason: string | null;
   }>('SELECT * FROM payments WHERE user_id=$1', [userId]);
+  const groupedLines = new Map<
+    string,
+    { cents: number; lines: NonNullable<LedgerEntry['lines']> }
+  >();
+  for (const line of lines) {
+    let group = groupedLines.get(line.consumption_id);
+    if (!group) {
+      group = { cents: 0, lines: [] };
+      groupedLines.set(line.consumption_id, group);
+    }
+    group.cents += (line.quantity - line.removed_quantity) * line.price_cents;
+    group.lines.push({
+      id: line.id,
+      name: line.product_name,
+      quantity: line.quantity,
+      removedQuantity: line.removed_quantity,
+      priceCents: line.price_cents,
+    });
+  }
   const entries: LedgerEntry[] = [
     ...purchases.map((p) => ({
       id: p.id,
       kind: 'consumption' as const,
-      cents: lines
-        .filter((l) => l.consumption_id === p.id)
-        .reduce((total, l) => total + (l.quantity - l.removed_quantity) * l.price_cents, 0),
+      cents: groupedLines.get(p.id)?.cents ?? 0,
       at: new Date(p.created_at).toISOString(),
       label:
         p.origin === 'free'
@@ -75,15 +92,7 @@ export async function getAccountLedger(
           ? undefined
           : new Date(new Date(p.created_at).getTime() + 600000).toISOString(),
       reason: p.reason ?? undefined,
-      lines: lines
-        .filter((l) => l.consumption_id === p.id)
-        .map((l) => ({
-          id: l.id,
-          name: l.product_name,
-          quantity: l.quantity,
-          removedQuantity: l.removed_quantity,
-          priceCents: l.price_cents,
-        })),
+      lines: groupedLines.get(p.id)?.lines ?? [],
     })),
     ...payments.map((p) => ({
       id: p.id,
@@ -357,6 +366,7 @@ export async function getFinancialSummary(
   actor: Member,
   from = '1970-01-01T00:00:00.000Z',
   to = new Date(Date.now() + 86400000).toISOString(),
+  snapshotAccounts?: Awaited<ReturnType<typeof getAccounts>>,
 ): Promise<FinancialSummary> {
   requireAdmin(actor);
   const [sales] = await db.query<{ sales: string; covered: string; cost: string; unknown: string }>(
@@ -375,7 +385,7 @@ export async function getFinancialSummary(
     'SELECT COALESCE(sum(cents),0) AS value FROM expenses WHERE voided_at IS NULL AND spent_at >= $1 AND spent_at < $2',
     [from, to],
   );
-  const accounts = await getAccounts(db, actor);
+  const accounts = snapshotAccounts ?? (await getAccounts(db, actor));
   const costCents = Math.round(Number(sales.cost) / 10000);
   return {
     salesCents: Number(sales.sales),

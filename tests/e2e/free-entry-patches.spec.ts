@@ -140,8 +140,10 @@ test('patchs : réservation sans débit puis commande admin et ardoise confirmé
     const dialog = page.getByRole('dialog', { name: 'Nouvelle précommande', exact: true });
     await dialog.getByLabel('Nom du patch', { exact: true }).fill('Falcons reconnaissance');
     await dialog.getByLabel('Prix estimé par patch (CHF)', { exact: true }).fill('8');
-    await expect(dialog.getByLabel('Objectif minimum (CHF)', { exact: true })).toHaveValue('100');
-    await dialog.getByLabel('Objectif minimum (CHF)', { exact: true }).fill('12');
+    await expect(dialog.getByLabel('Quantité minimum de patchs', { exact: true })).toHaveValue(
+      '100',
+    );
+    await dialog.getByLabel('Quantité minimum de patchs', { exact: true }).fill('2');
     await dialog.getByLabel('Dernier jour de réservation', { exact: true }).fill('2099-12-31');
     for (const width of [320, 390, 1440]) {
       await page.setViewportSize({ width, height: 900 });
@@ -162,7 +164,7 @@ test('patchs : réservation sans débit puis commande admin et ardoise confirmé
     await expect(page.getByText('2 patchs réservés', { exact: true })).toBeVisible();
     await expect(
       page.getByRole('progressbar', { name: 'Progression des précommandes' }),
-    ).toHaveAttribute('aria-valuetext', 'CHF 16.00 sur CHF 12.00');
+    ).toHaveAttribute('aria-valuetext', '2 sur 2 patchs');
     expect((await getAccountLedger(ctx.db, ctx.member)).balanceCents).toBe(0);
     await capture(page, 'patch-reserved-390');
     ctx.use(ctx.admin);
@@ -180,7 +182,7 @@ test('patchs : réservation sans débit puis commande admin et ardoise confirmé
     await confirmation.getByLabel('Prix définitif par patch (CHF)', { exact: true }).fill('5');
     await expect(
       confirmation.getByRole('button', { name: 'La commande a été passée', exact: true }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     await confirmation.getByLabel('Prix définitif par patch (CHF)', { exact: true }).fill('7');
     await expect(confirmation).toContainText('CHF 14.00');
     for (const width of [320, 390, 1440]) {

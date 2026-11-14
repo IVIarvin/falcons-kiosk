@@ -12,7 +12,7 @@ type CampaignRow = {
   name: string;
   description: string;
   price_cents: number;
-  funding_goal_cents: number;
+  minimum_quantity: number;
   final_price_cents: number | null;
   deadline: string;
   status: 'open' | 'ordered' | 'cancelled';
@@ -35,7 +35,7 @@ export type PatchCampaign = {
   priceCents: number;
   estimatedPriceCents: number;
   finalPriceCents: number | null;
-  fundingGoalCents: number;
+  minimumQuantity: number;
   reservationCount: number;
   deadline: string;
   status: CampaignRow['status'];
@@ -81,7 +81,7 @@ export async function getPatchBoard(db: Database, actor: Member): Promise<PatchC
       priceCents: price,
       estimatedPriceCents: c.price_cents,
       finalPriceCents: c.final_price_cents,
-      fundingGoalCents: c.funding_goal_cents,
+      minimumQuantity: c.minimum_quantity,
       reservationCount: Number(aggregate?.count ?? 0),
       deadline: c.deadline,
       status: c.status,
@@ -137,7 +137,7 @@ export async function createPatchCampaign(db: Database, actor: Member, input: un
       name: z.string().trim().min(2).max(120),
       description: z.string().trim().max(1000).default(''),
       priceCents: z.number().int().min(0).max(1000000),
-      fundingGoalCents: z.number().int().min(1).max(100000000).default(10000),
+      minimumQuantity: z.number().int().min(1).max(1000000).default(100),
       deadline: z
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -154,7 +154,7 @@ export async function createPatchCampaign(db: Database, actor: Member, input: un
   assert(date.valid, 'La date limite est déjà passée.');
   const id = randomUUID();
   await db.query(
-    'INSERT INTO patch_campaigns(id,name,description,price_cents,deadline,actor_id,funding_goal_cents) VALUES($1,$2,$3,$4,$5,$6,$7)',
+    'INSERT INTO patch_campaigns(id,name,description,price_cents,deadline,actor_id,minimum_quantity) VALUES($1,$2,$3,$4,$5,$6,$7)',
     [
       id,
       data.name,
@@ -162,7 +162,7 @@ export async function createPatchCampaign(db: Database, actor: Member, input: un
       data.priceCents,
       data.deadline,
       actor.id,
-      data.fundingGoalCents,
+      data.minimumQuantity,
     ],
   );
   return { id };
@@ -173,16 +173,16 @@ export async function updatePatchEstimate(db: Database, actor: Member, input: un
     .object({
       campaignId: z.string().min(1),
       priceCents: z.number().int().min(0).max(1000000),
-      fundingGoalCents: z.number().int().min(1).max(100000000),
+      minimumQuantity: z.number().int().min(1).max(1000000),
     })
     .parse(input);
   return db.transaction(async (tx) => {
     const campaign = await lockedCampaign(tx, data.campaignId);
     assert(campaign.status === 'open', 'Cette précommande est déjà commandée ou annulée.');
-    await tx.query('UPDATE patch_campaigns SET price_cents=$2,funding_goal_cents=$3 WHERE id=$1', [
+    await tx.query('UPDATE patch_campaigns SET price_cents=$2,minimum_quantity=$3 WHERE id=$1', [
       campaign.id,
       data.priceCents,
-      data.fundingGoalCents,
+      data.minimumQuantity,
     ]);
     await tx.query(
       'INSERT INTO audit(id,actor_id,action,reference_id,reason,before_data,after_data) VALUES($1,$2,$3,$4,$5,$6,$7)',
@@ -194,7 +194,7 @@ export async function updatePatchEstimate(db: Database, actor: Member, input: un
         'Estimation ajustée selon la quantité',
         JSON.stringify({
           priceCents: campaign.price_cents,
-          fundingGoalCents: campaign.funding_goal_cents,
+          minimumQuantity: campaign.minimum_quantity,
         }),
         JSON.stringify(data),
       ],
@@ -264,7 +264,7 @@ export async function confirmPatchOrder(
       expectedTotalQuantity: z.number().int().min(1).max(1000000),
       expectedPriceCents: z.number().int().min(0).max(1000000),
       finalPriceCents: z.number().int().min(0).max(1000000),
-      expectedFundingGoalCents: z.number().int().min(1).max(100000000),
+      expectedMinimumQuantity: z.number().int().min(1).max(1000000),
       idempotencyKey: z.string().min(1).max(100),
     })
     .parse(input);
@@ -305,14 +305,14 @@ export async function confirmPatchOrder(
     assert(
       quantity === data.expectedTotalQuantity &&
         campaign.price_cents === data.expectedPriceCents &&
-        campaign.funding_goal_cents === data.expectedFundingGoalCents,
+        campaign.minimum_quantity === data.expectedMinimumQuantity,
       'Les réservations ont changé. Vérifie le nouveau total avant de confirmer.',
       'PRICE_CHANGED',
       409,
     );
     assert(
-      total >= campaign.funding_goal_cents,
-      'L’objectif minimum de précommandes n’est pas atteint au prix définitif.',
+      quantity >= campaign.minimum_quantity,
+      'La quantité minimum de patchs n’est pas atteinte.',
     );
     for (const reservation of reservations) {
       await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [reservation.user_id]);
@@ -333,7 +333,7 @@ export async function confirmPatchOrder(
         ],
       );
       await tx.query(
-        'INSERT INTO consumption_lines(id,consumption_id,product_id,product_name,unit,quantity,price_cents,cost_micros,is_beverage) VALUES($1,$2,NULL,$3,$4,$5,$6,NULL,false)',
+        'INSERT INTO consumption_lines(id,consumption_id,product_id,product_name,unit,quantity,price_cents,cost_micros,is_beverage,is_alcoholic) VALUES($1,$2,NULL,$3,$4,$5,$6,NULL,false,false)',
         [randomUUID(), id, `Patch · ${campaign.name}`, 'patch', reservation.quantity, finalPrice],
       );
       await tx.query('UPDATE patch_reservations SET consumption_id=$2 WHERE id=$1', [

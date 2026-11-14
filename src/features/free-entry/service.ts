@@ -13,13 +13,15 @@ import { getPillerQuotes } from '@/features/piller/service';
 const schema = z.object({
   idempotencyKey: z.string().min(1).max(100),
   name: z.string().trim().min(2).max(120),
-  category: z.enum([
-    'Boissons sans alcool',
-    'Boissons alcoolisées',
-    'Snacks salés',
-    'Snacks sucrés',
-    'Autre',
-  ]).default('Autre'),
+  category: z
+    .enum([
+      'Boissons sans alcool',
+      'Boissons alcoolisées',
+      'Snacks salés',
+      'Snacks sucrés',
+      'Autre',
+    ])
+    .default('Autre'),
   quantity: z.number().int().min(1).max(1000),
   priceCents: z.number().int().min(0).max(1000000),
 });
@@ -60,7 +62,10 @@ export async function recordFreeEntry(
           [
             {
               quantity: data.quantity,
-              product: { is_beverage: family?.beverage ?? false, details: classifyDetails(data.category) },
+              product: {
+                is_beverage: family?.beverage ?? false,
+                details: classifyDetails(data.category),
+              },
             },
           ],
           await getPillerQuotes(tx),
@@ -81,8 +86,17 @@ export async function recordFreeEntry(
       ],
     );
     await tx.query(
-      'INSERT INTO consumption_lines(id,consumption_id,product_id,product_name,unit,quantity,price_cents,cost_micros,is_beverage) VALUES($1,$2,NULL,$3,$4,$5,$6,NULL,$7)',
-      [randomUUID(), id, data.name, 'pièce', data.quantity, data.priceCents, family?.beverage ?? false],
+      'INSERT INTO consumption_lines(id,consumption_id,product_id,product_name,unit,quantity,price_cents,cost_micros,is_beverage,is_alcoholic) VALUES($1,$2,NULL,$3,$4,$5,$6,NULL,$7,$8)',
+      [
+        randomUUID(),
+        id,
+        data.name,
+        'pièce',
+        data.quantity,
+        data.priceCents,
+        family?.beverage ?? false,
+        family?.alcohol === 'present',
+      ],
     );
     await tx.query(
       'INSERT INTO audit(id,actor_id,action,reference_id,reason,after_data) VALUES($1,$2,$3,$4,$5,$6)',

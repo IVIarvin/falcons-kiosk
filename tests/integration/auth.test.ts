@@ -1,6 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase, type Database } from '@/lib/db';
-import { register, login, resolveSession, logout } from '@/features/auth/service';
+import {
+  register,
+  login,
+  resolveSession,
+  logout,
+  changePassword,
+  issueReset,
+  resetPassword,
+} from '@/features/auth/service';
 
 describe('comptes autonomes et sessions', () => {
   let db: Database;
@@ -46,5 +54,35 @@ describe('comptes autonomes et sessions', () => {
     expect((await resolveSession(db, session.token))?.name).toBe('Martin');
     await logout(db, session.token);
     expect(await resolveSession(db, session.token)).toBeNull();
+  });
+  it('invalide les anciens codes de récupération après un changement de mot de passe', async () => {
+    const member = await register(db, {
+      name: 'Récupération',
+      grade: 'Sdt',
+      phone: '0795556677',
+      password: 'falcons-secret-123',
+    });
+    const admin = { ...member, role: 'admin' as const };
+    const token = await issueReset(db, admin, member.id);
+    const session = await login(
+      db,
+      { phone: member.phone, password: 'falcons-secret-123' },
+      'password-change',
+    );
+    await changePassword(db, member, {
+      current: 'falcons-secret-123',
+      password: 'new-falcons-secret',
+    });
+    await expect(resetPassword(db, { token, password: 'old-code-secret' })).rejects.toThrow(
+      /invalide ou expiré/,
+    );
+    expect(await resolveSession(db, session.token)).toBeNull();
+    await expect(
+      login(db, { phone: member.phone, password: 'new-falcons-secret' }, 'password-change'),
+    ).resolves.toHaveProperty('token');
+    const freshToken = await issueReset(db, admin, member.id);
+    await expect(
+      resetPassword(db, { token: freshToken, password: 'fresh-code-secret' }),
+    ).resolves.toBeUndefined();
   });
 });
