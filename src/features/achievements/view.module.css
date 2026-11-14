@@ -1,0 +1,42 @@
+.ranking li > .identity {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.details > span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.details > strong {
+  display: flex;
+  align-items: center;
+  gap: 4px 8px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.ranking li > .identity small {
+  color: var(--muted);
+  font-weight: 400;
+}
+@media (max-width: 600px) {
+  .ranking li {
+    display:grid;
+    grid-template-columns:28px minmax(0,1fr) auto;
+    gap:6px 10px;
+  }
+  .ranking li > .identity {
+    gap: 8px;
+    grid-column:2;
+    grid-row:1;
+  }
+  .ranking li>strong:first-child{grid-column:1;grid-row:1/3;}
+  .ranking li>strong:last-of-type{grid-column:2;grid-row:2;padding-left:40px;justify-self:start;}
+  .ranking li>svg{grid-column:3;grid-row:1/3;}
+}

@@ -4,6 +4,8 @@ import { Trophy, GlassWater, Mountain, PackageCheck, ChevronDown } from 'lucide-
 import { useApp } from '@/components/context';
 import { Empty, PageTitle } from '@/components/ui';
 import { formatCHF } from '@/lib/money';
+import { ScoutAvatar } from '@/components/scout-avatar';
+import styles from './view.module.css';
 export function CrewView() {
   const { state } = useApp();
   const [metric, setMetric] = useState<'contributors' | 'drinks'>('contributors');
@@ -132,7 +134,7 @@ export function CrewView() {
           Les premières consommations lanceront le classement.
         </Empty>
       ) : (
-        <ol className="ranking-list">
+        <ol className={`ranking-list ${styles.ranking}`}>
           {ranks.map((r) => (
             <li
               key={r.id}
@@ -141,12 +143,15 @@ export function CrewView() {
               tabIndex={r.id === state.user.id ? -1 : undefined}
             >
               <strong className="rank-number">{String(r.rank).padStart(2, '0')}</strong>
-              <div>
-                <span>{r.grade}</span>
-                <strong>
-                  {r.name}
-                  {r.id === state.user.id && <small>toi</small>}
-                </strong>
+              <div className={styles.identity}>
+                <ScoutAvatar seed={r.avatarSeed ?? r.id} size={32} />
+                <div className={styles.details}>
+                  <span>{r.grade}</span>
+                  <strong>
+                    {r.name}
+                    {r.id === state.user.id && <small>toi</small>}
+                  </strong>
+                </div>
               </div>
               <strong>
                 {mode === 'drinks'

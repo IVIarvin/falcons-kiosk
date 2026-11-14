@@ -1,6 +1,13 @@
 import type { Database } from '@/lib/db';
 import type { Member } from '@/features/auth/service';
-export type RankEntry = { id: string; name: string; grade: string; score: number; rank: number };
+export type RankEntry = {
+  id: string;
+  name: string;
+  grade: string;
+  score: number;
+  rank: number;
+  avatarSeed?: string | null;
+};
 export type Badge = {
   type: 'first' | 'drinks' | 'contributor';
   label: string;
@@ -66,26 +73,34 @@ export async function getCommunity(
     id: string;
     name: string;
     grade: string;
+    avatar_seed: string | null;
     amount: string;
     drinks: string;
     week: string;
   }>(
-    `SELECT u.id,u.name,u.grade,COALESCE(sum((l.quantity-l.removed_quantity)*l.price_cents),0) AS amount,COALESCE(sum(CASE WHEN l.is_alcoholic THEN l.quantity-l.removed_quantity ELSE 0 END),0) AS drinks,date_trunc('week',c.created_at AT TIME ZONE 'Europe/Zurich')::date::text AS week FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id JOIN users u ON u.id=c.user_id WHERE c.reversed_at IS NULL AND l.quantity>l.removed_quantity GROUP BY u.id,u.name,u.grade,week`,
+    `SELECT u.id,u.name,u.grade,u.avatar_seed,COALESCE(sum((l.quantity-l.removed_quantity)*l.price_cents),0) AS amount,COALESCE(sum(CASE WHEN l.is_alcoholic THEN l.quantity-l.removed_quantity ELSE 0 END),0) AS drinks,date_trunc('week',c.created_at AT TIME ZONE 'Europe/Zurich')::date::text AS week FROM consumption_lines l JOIN consumptions c ON c.id=l.consumption_id JOIN users u ON u.id=c.user_id WHERE c.reversed_at IS NULL AND l.quantity>l.removed_quantity GROUP BY u.id,u.name,u.grade,u.avatar_seed,week`,
   );
   const localParts = parts(start);
   const weekKey = `${localParts.year}-${String(localParts.month).padStart(2, '0')}-${String(localParts.day).padStart(2, '0')}`;
   const weekly = rows.filter((r) => r.week === weekKey);
   const rank = (source: typeof rows, metric: 'drinks' | 'amount') =>
     rankEntries(
-      source.map((r) => ({ id: r.id, name: r.name, grade: r.grade, score: Number(r[metric]) })),
+      source.map((r) => ({
+        id: r.id,
+        name: r.name,
+        grade: r.grade,
+        avatarSeed: r.avatar_seed,
+        score: Number(r[metric]),
+      })),
     );
-  const totals = new Map<string, { id: string; name: string; grade: string; score: number }>();
+  const totals = new Map<string, Omit<RankEntry, 'rank'>>();
   for (const r of rows) {
     const current = totals.get(r.id);
     totals.set(r.id, {
       id: r.id,
       name: r.name,
       grade: r.grade,
+      avatarSeed: r.avatar_seed,
       score: (current?.score ?? 0) + Number(r.amount),
     });
   }

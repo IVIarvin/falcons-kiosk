@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect, type FormEvent } from 'react';
-import { LogOut, Download, Shield, Smartphone, Compass, CircleCheck } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { LogOut, Download, Shield, Smartphone, Compass, CircleCheck, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/context';
 import { Field, PageTitle, Busy, Dialog } from '@/components/ui';
@@ -8,19 +8,13 @@ import { api, clearPrivateState } from '@/lib/client';
 import { ScoutAvatar } from '@/components/scout-avatar';
 import { profileMilestones } from './milestones';
 import styles from './milestones.module.css';
+import { AvatarPicker } from './avatar-picker';
 export function ProfileView() {
   const { state, run, busy, notice } = useApp();
   const router = useRouter();
   const [install, setInstall] = useState(false);
   const savedAvatar = state.user.avatar_seed ?? state.user.id;
-  const [preview, setPreview] = useState(savedAvatar);
-  useEffect(() => setPreview(savedAvatar), [savedAvatar]);
-  async function keepAvatar() {
-    try {
-      await run('avatar', { seed: preview });
-      notice('Avatar enregistré.');
-    } catch {}
-  }
+  const [choosingAvatar, setChoosingAvatar] = useState(false);
   async function profile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
@@ -40,39 +34,31 @@ export function ProfileView() {
   return (
     <>
       <PageTitle title="Mon profil" subtitle={`${state.user.grade} ${state.user.name}`} />
-      <div className={styles.identity}>
-        <ScoutAvatar seed={preview} size={88} />
+      <section className={styles.identity} aria-label="Ton avatar enregistré">
+        <ScoutAvatar seed={savedAvatar} size={88} />
         <div>
           <p>Ton avatar de section</p>
           <div className={styles.avatarActions}>
             <button
               className="button secondary"
               disabled={busy}
-              onClick={() => setPreview(crypto.randomUUID())}
+              onClick={() => setChoosingAvatar(true)}
             >
-              Un autre avatar
+              <Pencil size={16} aria-hidden="true" /> Changer mon avatar
             </button>
-            {preview !== savedAvatar && (
-              <>
-                <button
-                  className="button primary"
-                  disabled={busy}
-                  onClick={() => void keepAvatar()}
-                >
-                  Garder cet avatar
-                </button>
-                <button
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => setPreview(savedAvatar)}
-                >
-                  Annuler
-                </button>
-              </>
-            )}
           </div>
         </div>
-      </div>
+      </section>
+      {choosingAvatar && (
+        <AvatarPicker
+          savedSeed={savedAvatar}
+          onClose={() => setChoosingAvatar(false)}
+          onSave={async (seed) => {
+            await run('avatar', { seed });
+            notice('Avatar enregistré.');
+          }}
+        />
+      )}
       <section className={styles.badges} aria-label="Tes nouveaux succès">
         {profileMilestones(state.ledger.entries).map((b) => (
           <article key={b.id} className={styles.badge} data-earned={b.earned}>
