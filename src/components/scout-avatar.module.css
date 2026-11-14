@@ -1,0 +1,37 @@
+.avatar {
+  display: block;
+  flex-shrink: 0;
+  max-width: 100%;
+  max-height: 100%;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.row > span,
+.row > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hat {
+  transform-box: fill-box;
+  transform-origin: 50% 80%;
+  transition: transform var(--motion-feedback) var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .avatar:hover .hat {
+    transform: rotate(-3deg) translateY(-1px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hat {
+    transition: none;
+    transform: none !important;
+  }
+}
+:global(html[data-input='keyboard']) .hat {
+  transition: none;
+  transform: none;
+}

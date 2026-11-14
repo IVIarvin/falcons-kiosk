@@ -24,6 +24,7 @@ import type { Snapshot } from '@/lib/application';
 import { api, ApiError, authEvent } from '@/lib/client';
 import { AppContext } from './context';
 import { Logo } from './ui';
+import { ScoutAvatar } from './scout-avatar';
 import { NavigationHint, trackInputModality } from './motion';
 import { AuthForm } from '@/features/auth/form';
 const memberLinks = [
@@ -252,7 +253,9 @@ export function App({ demo = false, children }: { demo?: boolean; children: Reac
               )
             )}
             <Link href="/profil" className="identity">
-              <span>{state.user.name[0]}</span>
+              <span>
+                <ScoutAvatar seed={state.user.id} size={36} />
+              </span>
               <div>
                 <strong>{state.user.name}</strong>
                 <small>{state.user.grade}</small>
@@ -277,7 +280,7 @@ export function App({ demo = false, children }: { demo?: boolean; children: Reac
               </Link>
             )}
             <Link className="mobile-avatar" href="/profil" aria-label="Mon profil">
-              {state.user.name[0]}
+              <ScoutAvatar seed={state.user.id} size={44} />
             </Link>
           </div>
         </div>

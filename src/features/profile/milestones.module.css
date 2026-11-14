@@ -1,0 +1,47 @@
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.badges {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.badge {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.badge svg {
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.badge[data-earned='true'] svg,
+.badge[data-earned='true'] strong {
+  color: var(--accent);
+}
+.badge h3 {
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+.badge p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.badge strong {
+  font-size: 13px;
+  color: var(--muted);
+}
+@media (max-width: 360px) {
+  .badges {
+    gap: 10px;
+  }
+  .badge {
+    padding: 12px;
+  }
+}

@@ -16,6 +16,8 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useApp } from '@/components/context';
+import { ScoutAvatar } from '@/components/scout-avatar';
+import avatarStyles from '@/components/scout-avatar.module.css';
 import { PageTitle, Empty, Dialog, Field, Busy, DownloadLink } from '@/components/ui';
 import { PillerAdminPanel, PillerLibrary } from '@/features/piller/panel';
 import { ProductEditor } from '@/features/catalog/editor';
@@ -68,7 +70,7 @@ function Settlements() {
   const { state, run, refresh, notice, busy } = useApp();
   const admin = state.admin!;
   const [search, setSearch] = useState('');
-  const [all, setAll] = useState(false);
+  const [all, setAll] = useState(true);
   const [payment, setPayment] = useState<Account | null>(null);
   const [account, setAccount] = useState<{ member: Account; ledger: AccountLedger } | null>(null);
   const [correction, setCorrection] = useState<{ id: string; kind: string } | null>(null);
@@ -170,12 +172,24 @@ function Settlements() {
             />
           </div>
           <label className="check-line">
-            <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} />{' '}
-            Afficher aussi les comptes à jour
+            <input type="checkbox" checked={!all} onChange={(e) => setAll(!e.target.checked)} />{' '}
+            Uniquement les comptes à régler
           </label>
           {!accounts.length ? (
-            <Empty title="Aucun compte à régler.">
-              {search ? 'Essaie un autre nom.' : 'Les ardoises de la section sont à jour.'}
+            <Empty
+              title={
+                search
+                  ? 'Aucun membre trouvé.'
+                  : all
+                    ? 'Aucun membre inscrit.'
+                    : 'Aucun compte à régler.'
+              }
+            >
+              {search
+                ? 'Essaie un autre nom.'
+                : all
+                  ? 'Les nouveaux inscrits apparaîtront ici.'
+                  : 'Les ardoises de la section sont à jour.'}
             </Empty>
           ) : (
             <div className="table-wrap">
@@ -192,9 +206,15 @@ function Settlements() {
                   {accounts.map((a) => (
                     <tr key={a.id}>
                       <td>
-                        <button className="member-name" onClick={() => void openAccount(a)}>
-                          <span>{a.grade}</span> {a.name}
-                          {!a.active && <small>désactivé</small>}
+                        <button
+                          className={`member-name ${avatarStyles.row}`}
+                          onClick={() => void openAccount(a)}
+                        >
+                          <ScoutAvatar seed={a.id} size={32} />
+                          <span>
+                            {a.grade} <strong>{a.name}</strong>
+                            {!a.active && <small>désactivé</small>}
+                          </span>
                         </button>
                       </td>
                       <td className="phone-column">
@@ -945,9 +965,12 @@ function Members() {
               .map((a) => (
                 <tr key={a.id}>
                   <td>
-                    <strong>
-                      {a.grade} {a.name}
-                    </strong>
+                    <div className={avatarStyles.row}>
+                      <ScoutAvatar seed={a.id} size={32} />
+                      <strong>
+                        {a.grade} {a.name}
+                      </strong>
+                    </div>
                   </td>
                   <td>{a.phone}</td>
                   <td>

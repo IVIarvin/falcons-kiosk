@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Check, Plus, RefreshCw, Search, Undo2, UserPlus } from 'lucide-react';
 import { useApp } from '@/components/context';
+import { ScoutAvatar } from '@/components/scout-avatar';
 import { Busy, Dialog, Field } from '@/components/ui';
 import { api, durableAction, pendingAction } from '@/lib/client';
 import type { Product } from '@/lib/types';
@@ -279,6 +280,7 @@ export function ServiceTicketDialog({
                 aria-label={`Servir à ${p.name}`}
                 onClick={() => void serve(p)}
               >
+                <ScoutAvatar seed={p.memberId ?? p.visitorId!} size={36} />
                 <span>
                   <strong>{p.name}</strong>
                   <small>

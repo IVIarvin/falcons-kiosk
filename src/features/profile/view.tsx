@@ -1,10 +1,13 @@
 'use client';
 import { useState, type FormEvent } from 'react';
-import { LogOut, Download, Shield, Smartphone } from 'lucide-react';
+import { LogOut, Download, Shield, Smartphone, Compass, CircleCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/context';
 import { Field, PageTitle, Busy, Dialog } from '@/components/ui';
 import { api, clearPrivateState } from '@/lib/client';
+import { ScoutAvatar } from '@/components/scout-avatar';
+import { profileMilestones } from './milestones';
+import styles from './milestones.module.css';
 export function ProfileView() {
   const { state, run, busy, notice } = useApp();
   const router = useRouter();
@@ -28,6 +31,24 @@ export function ProfileView() {
   return (
     <>
       <PageTitle title="Mon profil" subtitle={`${state.user.grade} ${state.user.name}`} />
+      <div className={styles.identity}>
+        <ScoutAvatar seed={state.user.id} size={88} />
+        <span>Ton avatar de section</span>
+      </div>
+      <section className={styles.badges} aria-label="Tes nouveaux succès">
+        {profileMilestones(state.ledger.entries).map((b) => (
+          <article key={b.id} className={styles.badge} data-earned={b.earned}>
+            {b.id === 'regular' ? (
+              <Compass size={24} aria-hidden="true" />
+            ) : (
+              <CircleCheck size={24} aria-hidden="true" />
+            )}
+            <h3>{b.label}</h3>
+            <strong>{b.earned ? 'Débloqué' : `${b.progress} / ${b.target}`}</strong>
+            <p>{b.detail}</p>
+          </article>
+        ))}
+      </section>
       <div className="profile-layout">
         <section className="form-panel">
           <h2>Mes coordonnées</h2>
