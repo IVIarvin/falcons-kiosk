@@ -7,3 +7,5 @@ Pendant l’enregistrement, les boutons et la fermeture sont bloqués pour évit
 Contributeurs, Buveurs et contributions depuis le début utilisent le même avatar enregistré. Le rang, le grade, le nom et les scores sont conservés. Sur mobile, le score se place sous le nom pour préserver la lecture des noms longs. Les portraits restent des SVG locaux ; aucune migration ni API externe n’est ajoutée.
 
 Validation : tests RED puis GREEN pour l’agrégat social et le parcours navigateur. Deux parcours couvrent annulation, nouveau tirage, erreur503 puis reprise, verrouillage de l’enregistrement, persistance après rechargement et cohérence profil/header/classements ; un troisième vérifie le périmètre alcool du classement. Captures à 320/390/1440 inspectées, finition mobile confirmée. TypeScript et build production réussis, revue Sol6.1 medium sans point bloquant.
+
+Publié et contrôlé en production le 14 novembre 2026, commit `a7fed07ae893be74db6ba18366e625593e707223` : 148 tests réussis. Vérification publique authentifiée avec les écritures API bloquées : parcours de sélection/annulation et portraits des classements conformes, aucun avatar réel modifié.
