@@ -70,7 +70,7 @@ export function LedgerList({
                   <button
                     className="text-button"
                     onClick={() => setExpanded((old) => ({ ...old, [e.id]: !showLines }))}
-                    aria-label="Afficher le détail"
+                    aria-label={showLines ? 'Masquer le détail' : 'Afficher le détail'}
                     aria-expanded={showLines}
                     aria-controls={`ledger-detail-${e.id}`}
                   >
@@ -173,7 +173,7 @@ export function ArdoiseView() {
             ? 'Cet avoir sera déduit de tes prochains achats.'
             : due === 0
               ? 'Ton ardoise est à jour.'
-              : 'Règle auprès d’un admin.'}
+              : 'Le responsable te demande le règlement dans TWINT et confirme sa réception ici.'}
         </p>
       </div>
       <h2 className="section-heading">Historique</h2>

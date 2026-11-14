@@ -34,7 +34,11 @@ export function ProfileView() {
   }
   return (
     <>
-      <PageTitle title="Mon profil" subtitle={`${state.user.grade} ${state.user.name}`} />
+      <PageTitle title="Mon profil" subtitle={`${state.user.grade} ${state.user.name}`}>
+        <button className="button secondary" onClick={() => setInstall(true)}>
+          <Download size={18} /> Installer {appName}
+        </button>
+      </PageTitle>
       <section className={styles.identity} aria-label="Ton avatar enregistré">
         <ScoutAvatar seed={savedAvatar} size={88} />
         <div>
@@ -60,25 +64,11 @@ export function ProfileView() {
           }}
         />
       )}
-      <section className={styles.badges} aria-label="Tes nouveaux succès">
-        {profileMilestones(state.ledger.entries).map((b) => (
-          <article key={b.id} className={styles.badge} data-earned={b.earned}>
-            {b.id === 'regular' ? (
-              <Compass size={24} aria-hidden="true" />
-            ) : (
-              <CircleCheck size={24} aria-hidden="true" />
-            )}
-            <h3>{b.label}</h3>
-            <strong>{b.earned ? 'Débloqué' : `${b.progress} / ${b.target}`}</strong>
-            <p>{b.detail}</p>
-          </article>
-        ))}
-      </section>
       <div className="profile-layout">
         <section className="form-panel">
           <h2>Mes coordonnées</h2>
           <form onSubmit={profile}>
-            <div className="form-grid">
+            <div className="form-grid profile-fields">
               <Field label="Grade">
                 <input name="grade" defaultValue={state.user.grade} required maxLength={30} />
               </Field>
@@ -133,10 +123,21 @@ export function ProfileView() {
           </form>
         </section>
       </div>
+      <section className={styles.badges} aria-label="Tes nouveaux succès">
+        {profileMilestones(state.ledger.entries).map((b) => (
+          <article key={b.id} className={styles.badge} data-earned={b.earned}>
+            {b.id === 'regular' ? (
+              <Compass size={24} aria-hidden="true" />
+            ) : (
+              <CircleCheck size={24} aria-hidden="true" />
+            )}
+            <h3>{b.label}</h3>
+            <strong>{b.earned ? 'Débloqué' : `${b.progress} / ${b.target}`}</strong>
+            <p>{b.detail}</p>
+          </article>
+        ))}
+      </section>
       <div className="profile-actions">
-        <button className="button secondary" onClick={() => setInstall(true)}>
-          <Download size={18} /> Installer {appName}
-        </button>
         <button
           className="button secondary"
           onClick={async () => {

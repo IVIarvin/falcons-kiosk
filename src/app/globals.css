@@ -715,6 +715,19 @@ html[data-input='keyboard'] .nav-pending {
 .settlement-main {
   min-width: 0;
 }
+.accounts-table .account-mobile-phone {
+  display: none;
+}
+.settlement-help {
+  margin-block: 12px 20px;
+  max-width: 65ch;
+}
+.settlements-layout .table-footer a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .ledger-summary {
   display: flex;
   align-items: center;
@@ -1284,6 +1297,8 @@ input[type='date'] {
 }
 .ledger-end .text-button {
   font-size: 13px;
+  min-height: 44px;
+  padding-inline: 6px;
 }
 .ledger-row.voided {
   opacity: 0.5;
@@ -1667,6 +1682,13 @@ input[type='date'] {
   .phone-column {
     display: none;
   }
+  .accounts-table .account-mobile-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin-left: 42px;
+  }
   .piller-panel {
     padding: 20px 15px;
   }
@@ -2043,6 +2065,49 @@ input[type='date'] {
   }
   .accounts-table {
     min-width: 0 !important;
+  }
+  .accounts-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .accounts-table tbody {
+    display: block;
+  }
+  .accounts-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .accounts-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .accounts-table tbody td {
+    border: 0;
+    padding: 0;
+    min-width: 0;
+  }
+  .accounts-table tbody td:first-child {
+    grid-column: 1 / -1;
+  }
+  .accounts-table .member-name {
+    width: 100%;
+    text-align: left;
+    min-height: 44px;
+  }
+  .accounts-table .number {
+    text-align: left;
+    align-self: center;
+  }
+  .accounts-table .number strong {
+    font-size: 20px;
+  }
+  .profile-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
   .accounts-table td,
   .accounts-table th {

@@ -321,7 +321,7 @@ export function App({ demo = false, children }: { demo?: boolean; children: Reac
                 aria-current={currentPage ? 'page' : currentGroup ? 'location' : undefined}
               >
                 <Icon size={23} />
-                <span>{href === '/admin/reglages' ? 'Plus' : label}</span>
+                <span>{label}</span>
                 <NavigationHint />
               </Link>
             );

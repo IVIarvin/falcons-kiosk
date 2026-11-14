@@ -143,14 +143,29 @@ function Reservation({
   return (
     <article className={styles.campaign}>
       <CampaignHeading campaign={c} />
+      {c.myQuantity > 0 && c.status !== 'cancelled' && (
+        <div className={styles.personalReservation}>
+          <div>
+            <span>Ta réservation</span>
+            <strong>
+              {c.myQuantity} patch{c.myQuantity > 1 ? 's' : ''} réservé{c.myQuantity > 1 ? 's' : ''}
+            </strong>
+          </div>
+          <div>
+            <span>
+              {c.myChargeVoided
+                ? 'Montant annulé'
+                : c.status === 'ordered'
+                  ? 'Total facturé'
+                  : 'Total estimé'}
+            </span>
+            {!c.myChargeVoided && <strong>{formatCHF(c.myQuantity * c.priceCents)}</strong>}
+          </div>
+        </div>
+      )}
       <PatchGallery campaign={c} />
       <CampaignCopy campaign={c} />
       <CampaignProgress campaign={c} />
-      {c.myQuantity > 0 && c.status !== 'cancelled' && (
-        <p className={styles.reserved}>
-          {c.myQuantity} patch{c.myQuantity > 1 ? 's' : ''} réservé{c.myQuantity > 1 ? 's' : ''}
-        </p>
-      )}
       {c.status === 'cancelled' && c.myQuantity > 0 && (
         <p className={styles.help}>
           Ta réservation a été annulée. Aucun montant n’a été ajouté à ton ardoise.

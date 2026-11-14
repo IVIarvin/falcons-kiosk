@@ -9,7 +9,7 @@ import {
   Copy,
   Plus,
   Pencil,
-  ArrowUpRight,
+  ArrowRight,
   Users,
   Download,
   RefreshCw,
@@ -19,7 +19,7 @@ import { useApp } from '@/components/context';
 import { ScoutAvatar } from '@/components/scout-avatar';
 import avatarStyles from '@/components/scout-avatar.module.css';
 import { PageTitle, Empty, Dialog, Field, Busy, DownloadLink } from '@/components/ui';
-import { PillerAdminPanel, PillerLibrary } from '@/features/piller/panel';
+import { PillerLibrary } from '@/features/piller/panel';
 import { ProductEditor } from '@/features/catalog/editor';
 import { ServiceControlView } from '@/features/service-tickets/control';
 import { AdminDataView } from '@/features/admin-data/view';
@@ -141,7 +141,7 @@ function Settlements() {
           </Link>
         )}
       </PageTitle>
-      <div className="admin-grid">
+      <div className="settlements-layout">
         <section className="settlement-main">
           <div className="ledger-summary">
             <span>{admin.accounts.filter((a) => a.balanceCents > 0).length} comptes à régler</span>
@@ -175,6 +175,9 @@ function Settlements() {
             <input type="checkbox" checked={!all} onChange={(e) => setAll(!e.target.checked)} />{' '}
             Masquer les comptes à zéro
           </label>
+          <p className="settlement-help muted">
+            Demande le règlement dans TWINT, puis marque le paiement reçu après réception.
+          </p>
           {!accounts.length ? (
             <Empty
               title={
@@ -215,6 +218,18 @@ function Settlements() {
                             {a.grade} <strong>{a.name}</strong>
                             {!a.active && <small>désactivé</small>}
                           </span>
+                        </button>
+                        <button
+                          className="copy-text account-mobile-phone"
+                          onClick={() => {
+                            void navigator.clipboard
+                              .writeText(a.phone)
+                              .then(() => notice('Numéro copié.'))
+                              .catch(() => notice(a.phone));
+                          }}
+                          aria-label={`Copier le numéro de ${a.name}`}
+                        >
+                          {a.phone} <Copy size={14} aria-hidden="true" />
                         </button>
                       </td>
                       <td className="phone-column">
@@ -262,11 +277,10 @@ function Settlements() {
               {accounts.length > 1 ? 's' : ''}
             </span>
             <Link href="/admin/finance">
-              Suivi financier <ArrowUpRight size={14} />
+              Suivi financier <ArrowRight size={16} />
             </Link>
           </div>
         </section>
-        <PillerAdminPanel />
       </div>
       {payment && (
         <Dialog
@@ -792,13 +806,13 @@ function Settings() {
           Données
         </Link>
         <Link className="button secondary" href="/admin/patchs">
-          Précommandes de patchs <ArrowUpRight size={16} />
+          Précommandes de patchs <ArrowRight size={16} />
         </Link>
         <Link className="button secondary" href="/admin/finance">
-          Suivi financier <ArrowUpRight size={16} />
+          Suivi financier <ArrowRight size={16} />
         </Link>
         <Link className="button secondary" href="/admin/documents">
-          Documents et exports <ArrowUpRight size={16} />
+          Documents et exports <ArrowRight size={16} />
         </Link>
       </div>
       <div className="profile-layout">
@@ -838,7 +852,7 @@ function Settings() {
           <h2>Membres et admins</h2>
           <p>Modifie les rôles et les accès des membres.</p>
           <Link className="button secondary" href="/admin/section">
-            Gérer les membres <ArrowUpRight size={16} />
+            Gérer les membres <ArrowRight size={16} />
           </Link>
           <h3 className="section-heading">Adresse du kiosque</h3>
           <p className="url-value">

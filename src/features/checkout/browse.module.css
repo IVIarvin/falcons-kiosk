@@ -23,11 +23,88 @@
 .card {
   position: relative;
 }
-:global(.basket-bar) > .summary {
+.card :global(.product-image):has(:global(.product-image-fallback)) {
+  height: 44px;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}
+:global(.basket-bar).basket {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px 20px;
+}
+.basketDetails {
+  min-width: 0;
+}
+.basketDetails summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.basketDetails summary::-webkit-details-marker {
+  display: none;
+}
+.basketDetails summary > span {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  color: var(--accent);
+  font-size: 14px;
+}
+.basketDetails summary > svg {
+  grid-column: 3;
+  grid-row: 1;
+}
+.basketDetails summary > strong:nth-child(2) {
+  font: 600 25px var(--heading);
+  font-variant-numeric: tabular-nums;
+}
+.basketDetails[open] summary > svg {
+  transform: rotate(180deg);
+}
+.basketDetails ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: min(30dvh, 260px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.basketDetails li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-block: 12px;
+  border-top: 1px solid var(--line);
+}
+.basketLine {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 15px;
+}
+.basketLine strong {
+  overflow-wrap: anywhere;
+}
+.basketLine span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.basketDetails :global(.quantity) {
+  flex-shrink: 0;
+  width: auto;
+  margin: 0;
+}
+:global(.basket-bar) > .basketActions {
+  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
 }
 .clear {
   min-height: 44px;
@@ -59,9 +136,28 @@
   .filters {
     gap: 6px;
   }
-  .filters button {
+  .filters:global(.category-tabs) button {
+    flex: 0 0 auto;
     font-size: 13px;
     padding-inline: 11px;
+  }
+  :global(.basket-bar).basket {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :global(.basket-bar) > .basketActions {
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .basketActions > :global(.button) {
+    flex: 1;
+    min-width: 0;
+  }
+  .basketDetails li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .basketLine {
+    flex: 1 1 130px;
   }
 }
 .receiptActions {

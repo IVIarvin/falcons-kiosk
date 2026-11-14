@@ -93,9 +93,25 @@
   font-size: 14px;
   line-height: 1.5;
 }
-.reserved {
-  font-weight: 600;
-  margin-top: 20px;
+.personalReservation {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 18px;
+  padding-block: 14px;
+  border-block: 1px solid var(--line);
+}
+.personalReservation > div {
+  display: grid;
+  gap: 4px;
+}
+.personalReservation span {
+  font-size: 14px;
+  color: var(--muted);
+}
+.personalReservation strong {
+  font-variant-numeric: tabular-nums;
   color: var(--accent);
 }
 .reserveForm {

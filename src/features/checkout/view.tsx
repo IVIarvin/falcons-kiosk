@@ -1,7 +1,17 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Minus, Check, ArrowRight, ShoppingBag, RefreshCw, Search, Star } from 'lucide-react';
+import {
+  Plus,
+  Minus,
+  Check,
+  ArrowRight,
+  ShoppingBag,
+  RefreshCw,
+  Search,
+  Star,
+  ChevronDown,
+} from 'lucide-react';
 import { useApp } from '@/components/context';
 import { Empty, Busy, PageTitle } from '@/components/ui';
 import { formatCHF } from '@/lib/money';
@@ -286,12 +296,47 @@ export function KioskView() {
       ) : (
         count > 0 &&
         !pending && (
-          <div className="basket-bar">
-            <div className={styles.summary}>
-              <strong>
-                {count} article{count > 1 ? 's' : ''}
-              </strong>
-              <span>{formatCHF(total)}</span>
+          <div className={`basket-bar ${styles.basket}`}>
+            <details className={styles.basketDetails}>
+              <summary>
+                <strong>
+                  {count} article{count > 1 ? 's' : ''}
+                </strong>
+                <strong>{formatCHF(total)}</strong>
+                <span>Voir le panier</span>
+                <ChevronDown size={18} aria-hidden="true" />
+              </summary>
+              <ul aria-label="Contenu du panier">
+                {selected.map((p) => (
+                  <li key={p.id}>
+                    <div className={styles.basketLine}>
+                      <strong>{p.name}</strong>
+                      <span>{formatCHF(p.price_cents * cart[p.id])}</span>
+                    </div>
+                    <div className="quantity">
+                      <button
+                        className="icon-button"
+                        disabled={working || pending}
+                        aria-label={`Retirer un ${p.name} du panier`}
+                        onClick={() => quantity(p.id, -1)}
+                      >
+                        <Minus size={17} />
+                      </button>
+                      <output aria-label={`Quantité au panier ${p.name}`}>{cart[p.id]}</output>
+                      <button
+                        className="icon-button"
+                        disabled={working || pending}
+                        aria-label={`Ajouter un ${p.name} au panier`}
+                        onClick={() => quantity(p.id, 1)}
+                      >
+                        <Plus size={17} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </details>
+            <div className={styles.basketActions}>
               <button
                 className={`text-button ${styles.clear}`}
                 aria-label="Vider le panier"
@@ -303,16 +348,16 @@ export function KioskView() {
               >
                 Vider
               </button>
+              <button className="button primary" disabled={working} onClick={() => void confirm()}>
+                {working ? (
+                  <Busy />
+                ) : (
+                  <>
+                    Ajouter à mon ardoise <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
             </div>
-            <button className="button primary" disabled={working} onClick={() => void confirm()}>
-              {working ? (
-                <Busy />
-              ) : (
-                <>
-                  Ajouter à mon ardoise <ArrowRight size={18} />
-                </>
-              )}
-            </button>
           </div>
         )
       )}
