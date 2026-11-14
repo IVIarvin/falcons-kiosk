@@ -12,6 +12,7 @@ import { assert } from '@/lib/errors';
 import {
   requireAdmin,
   updateProfile,
+  saveAvatar,
   changePassword,
   issueReset,
   type Member,
@@ -204,6 +205,8 @@ export async function dispatch(
       return completeCosts(db, user, input);
     case 'profile':
       return updateProfile(db, user, input);
+    case 'avatar':
+      return saveAvatar(db, user, input);
     case 'password':
       return changePassword(db, user, input);
     case 'memberAccess':

@@ -224,9 +224,12 @@ export async function mergeServiceVisitor(db: Database, actor: Member, input: un
 }
 export async function getServicePeople(db: Database, actor: Member) {
   await serviceAdmin(db, actor);
-  const members = await db.query<{ id: string; name: string; grade: string }>(
-    'SELECT id,name,grade FROM users WHERE active=true ORDER BY name,id',
-  );
+  const members = await db.query<{
+    id: string;
+    name: string;
+    grade: string;
+    avatar_seed: string | null;
+  }>('SELECT id,name,grade,avatar_seed FROM users WHERE active=true ORDER BY name,id');
   const visitors = await db.query<{ id: string; name: string; createdAt: string }>(
     'SELECT id,name,created_at AS "createdAt" FROM service_visitors WHERE merged_user_id IS NULL ORDER BY created_at DESC,id',
   );

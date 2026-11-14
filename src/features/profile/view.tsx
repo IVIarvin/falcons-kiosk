@@ -1,5 +1,5 @@
 'use client';
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { LogOut, Download, Shield, Smartphone, Compass, CircleCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/context';
@@ -12,6 +12,15 @@ export function ProfileView() {
   const { state, run, busy, notice } = useApp();
   const router = useRouter();
   const [install, setInstall] = useState(false);
+  const savedAvatar = state.user.avatar_seed ?? state.user.id;
+  const [preview, setPreview] = useState(savedAvatar);
+  useEffect(() => setPreview(savedAvatar), [savedAvatar]);
+  async function keepAvatar() {
+    try {
+      await run('avatar', { seed: preview });
+      notice('Avatar enregistré.');
+    } catch {}
+  }
   async function profile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
@@ -32,8 +41,37 @@ export function ProfileView() {
     <>
       <PageTitle title="Mon profil" subtitle={`${state.user.grade} ${state.user.name}`} />
       <div className={styles.identity}>
-        <ScoutAvatar seed={state.user.id} size={88} />
-        <span>Ton avatar de section</span>
+        <ScoutAvatar seed={preview} size={88} />
+        <div>
+          <p>Ton avatar de section</p>
+          <div className={styles.avatarActions}>
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => setPreview(crypto.randomUUID())}
+            >
+              Un autre avatar
+            </button>
+            {preview !== savedAvatar && (
+              <>
+                <button
+                  className="button primary"
+                  disabled={busy}
+                  onClick={() => void keepAvatar()}
+                >
+                  Garder cet avatar
+                </button>
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => setPreview(savedAvatar)}
+                >
+                  Annuler
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
       <section className={styles.badges} aria-label="Tes nouveaux succès">
         {profileMilestones(state.ledger.entries).map((b) => (

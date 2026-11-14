@@ -12,6 +12,7 @@ const columns: Record<string, string[]> = {
     'role',
     'active',
     'must_change_password',
+    'avatar_seed',
     'created_at',
   ],
   products: [

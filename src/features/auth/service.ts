@@ -14,6 +14,7 @@ export type Member = {
   role: 'member' | 'admin';
   active: boolean;
   must_change_password: boolean;
+  avatar_seed?: string | null;
 };
 export const sessionCookie = 'falcons_session';
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
@@ -22,7 +23,7 @@ export function normalizePhone(value: string) {
   assert(parsed && parsed.isValid(), 'Numéro de téléphone invalide.');
   return parsed.number as string;
 }
-const fields = 'id,name,grade,phone,role,active,must_change_password';
+const fields = 'id,name,grade,phone,role,active,must_change_password,avatar_seed';
 const passwordSchema = z
   .string()
   .min(10, 'Le mot de passe doit contenir au moins 10 caractères.')
@@ -171,6 +172,15 @@ export async function updateProfile(db: Database, user: Member, input: unknown) 
       throw new DomainError('Ce numéro est déjà utilisé.');
     throw e;
   }
+}
+export async function saveAvatar(db: Database, user: Member, input: unknown) {
+  const { seed } = z.object({ seed: z.uuid() }).strict().parse(input);
+  const [row] = await db.query(
+    'UPDATE users SET avatar_seed=$1 WHERE id=$2 AND active=true RETURNING id',
+    [seed, user.id],
+  );
+  assert(row, 'Compte indisponible.', 'FORBIDDEN', 403);
+  return { seed };
 }
 export async function changePassword(db: Database, user: Member, input: unknown) {
   const data = z.object({ current: z.string().max(128), password: passwordSchema }).parse(input);

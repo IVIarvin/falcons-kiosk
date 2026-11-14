@@ -109,7 +109,7 @@ export async function getAccountLedger(
 export async function getAccounts(db: Database, actor: Member) {
   requireAdmin(actor);
   const members = await db.query<Member & { balance: string }>(
-    `SELECT u.id,u.name,u.grade,u.phone,u.role,u.active,u.must_change_password,COALESCE(c.total,0)-COALESCE(p.total,0) AS balance FROM users u LEFT JOIN (SELECT c.user_id,sum((l.quantity-l.removed_quantity)*l.price_cents) AS total FROM consumptions c JOIN consumption_lines l ON l.consumption_id=c.id WHERE c.reversed_at IS NULL GROUP BY c.user_id) c ON c.user_id=u.id LEFT JOIN (SELECT user_id,sum(CASE WHEN kind='payment' THEN cents ELSE -cents END) AS total FROM payments WHERE voided_at IS NULL GROUP BY user_id) p ON p.user_id=u.id ORDER BY u.name`,
+    `SELECT u.id,u.name,u.grade,u.phone,u.role,u.active,u.must_change_password,u.avatar_seed,COALESCE(c.total,0)-COALESCE(p.total,0) AS balance FROM users u LEFT JOIN (SELECT c.user_id,sum((l.quantity-l.removed_quantity)*l.price_cents) AS total FROM consumptions c JOIN consumption_lines l ON l.consumption_id=c.id WHERE c.reversed_at IS NULL GROUP BY c.user_id) c ON c.user_id=u.id LEFT JOIN (SELECT user_id,sum(CASE WHEN kind='payment' THEN cents ELSE -cents END) AS total FROM payments WHERE voided_at IS NULL GROUP BY user_id) p ON p.user_id=u.id ORDER BY u.name`,
   );
   return members.map(({ balance: due, ...m }) => ({ ...m, balanceCents: Number(due) }));
 }

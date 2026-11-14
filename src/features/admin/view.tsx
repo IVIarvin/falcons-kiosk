@@ -210,7 +210,7 @@ function Settlements() {
                           className={`member-name ${avatarStyles.row}`}
                           onClick={() => void openAccount(a)}
                         >
-                          <ScoutAvatar seed={a.id} size={32} />
+                          <ScoutAvatar seed={a.avatar_seed ?? a.id} size={32} />
                           <span>
                             {a.grade} <strong>{a.name}</strong>
                             {!a.active && <small>désactivé</small>}
@@ -966,7 +966,7 @@ function Members() {
                 <tr key={a.id}>
                   <td>
                     <div className={avatarStyles.row}>
-                      <ScoutAvatar seed={a.id} size={32} />
+                      <ScoutAvatar seed={a.avatar_seed ?? a.id} size={32} />
                       <strong>
                         {a.grade} {a.name}
                       </strong>

@@ -254,7 +254,7 @@ export function App({ demo = false, children }: { demo?: boolean; children: Reac
             )}
             <Link href="/profil" className="identity">
               <span>
-                <ScoutAvatar seed={state.user.id} size={36} />
+                <ScoutAvatar seed={state.user.avatar_seed ?? state.user.id} size={36} />
               </span>
               <div>
                 <strong>{state.user.name}</strong>
@@ -280,7 +280,7 @@ export function App({ demo = false, children }: { demo?: boolean; children: Reac
               </Link>
             )}
             <Link className="mobile-avatar" href="/profil" aria-label="Mon profil">
-              <ScoutAvatar seed={state.user.id} size={44} />
+              <ScoutAvatar seed={state.user.avatar_seed ?? state.user.id} size={44} />
             </Link>
           </div>
         </div>

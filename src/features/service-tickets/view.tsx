@@ -102,6 +102,7 @@ export function ServiceTicketDialog({
     ? [
         ...people.members.map((m) => ({
           key: `member:${m.id}`,
+          avatarSeed: m.avatar_seed ?? m.id,
           memberId: m.id,
           visitorId: undefined,
           name: m.name,
@@ -109,6 +110,7 @@ export function ServiceTicketDialog({
         })),
         ...people.visitors.map((v) => ({
           key: `visitor:${v.id}`,
+          avatarSeed: v.id,
           memberId: undefined,
           visitorId: v.id,
           name: v.name,
@@ -280,7 +282,7 @@ export function ServiceTicketDialog({
                 aria-label={`Servir à ${p.name}`}
                 onClick={() => void serve(p)}
               >
-                <ScoutAvatar seed={p.memberId ?? p.visitorId!} size={36} />
+                <ScoutAvatar seed={p.avatarSeed} size={36} />
                 <span>
                   <strong>{p.name}</strong>
                   <small>
