@@ -119,8 +119,7 @@ function CampaignProgress({ campaign: c }: { campaign: PatchCampaign }) {
       </p>
       {c.status === 'open' && (
         <p className={styles.help}>
-          Total estimé. Le responsable ajuste le prix selon la quantité et confirme le prix
-          définitif à la commande.
+          Le prix dépend de la quantité. Le montant définitif sera confirmé à la commande.
         </p>
       )}
     </section>
@@ -222,7 +221,7 @@ export function PatchMemberView() {
   const campaigns = state.patches.filter((c) => c.status !== 'cancelled' || c.myQuantity > 0);
   return (
     <>
-      <PageTitle title="Patchs" subtitle="Réserve ta quantité. Le débit attend la commande." />
+      <PageTitle title="Patchs" subtitle="Réserve tes patchs. Facturation à la commande." />
       {operation.pending && (
         <div className="notice-box">
           <p>Une réservation attend confirmation.</p>
@@ -517,7 +516,7 @@ export function PatchAdminView() {
             <Field label="Prix estimé par patch (CHF)">
               <input name="price" inputMode="decimal" required disabled={createWorking} />
             </Field>
-            <Field label="Quantité minimum de patchs">
+            <Field label="Quantité minimale de patchs">
               <input
                 name="goal"
                 type="number"
@@ -529,10 +528,7 @@ export function PatchAdminView() {
                 disabled={createWorking}
               />
             </Field>
-            <Field
-              label="Dernier jour de réservation"
-              hint="Inclus, heure Suisse. L’estimation peut être ajustée selon la quantité."
-            >
+            <Field label="Dernier jour de réservation" hint="Date incluse, heure suisse.">
               <input
                 name="deadline"
                 type="date"
@@ -579,7 +575,7 @@ export function PatchAdminView() {
                 required
               />
             </Field>
-            <Field label="Quantité minimum de patchs">
+            <Field label="Quantité minimale de patchs">
               <input
                 name="goal"
                 type="number"
@@ -624,7 +620,7 @@ export function PatchAdminView() {
               <strong>{finalTotal === null ? 'À renseigner' : formatCHF(finalTotal)}</strong>
             </p>
             <p className={styles.help}>
-              Quantité minimum : {confirming.minimumQuantity} patchs.
+              Quantité minimale : {confirming.minimumQuantity} patchs.
               {confirming.totalQuantity < confirming.minimumQuantity
                 ? ' La quantité réservée est inférieure à ce minimum.'
                 : ''}

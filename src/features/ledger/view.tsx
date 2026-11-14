@@ -166,7 +166,7 @@ export function ArdoiseView() {
     <>
       <PageTitle title="Mon ardoise" />
       <div className="account-balance">
-        <span>{due < 0 ? 'Ton avoir disponible' : 'Ton solde à régler'}</span>
+        <span>{due < 0 ? 'Avoir disponible' : 'À régler'}</span>
         <strong>{formatCHF(Math.abs(due))}</strong>
         <p>
           {due < 0
@@ -177,7 +177,9 @@ export function ArdoiseView() {
         </p>
       </div>
       <h2 className="section-heading">Historique</h2>
-      <p className="muted">Retrait possible pendant 10 min. Ensuite, contacte un admin.</p>
+      <p className="muted">
+        Article non pris : retrait sous 10 min. Pour un patch ou après ce délai, contacte un admin.
+      </p>
       {pending && (
         <div className="notice-box">
           <p>Un retrait attend confirmation.</p>
@@ -208,9 +210,9 @@ export function ArdoiseView() {
           }}
         >
           <p>
-            <strong>T’es sûr ? Si tu mens, on te retrouvera.</strong>
+            <strong>Confirme la quantité à retirer.</strong>
           </p>
-          <p className="muted">Article non pris uniquement. Le retrait reste dans l’historique.</p>
+          <p className="muted">Uniquement pour un article non pris. La correction reste visible.</p>
           <form
             onSubmit={(e) => {
               e.preventDefault();

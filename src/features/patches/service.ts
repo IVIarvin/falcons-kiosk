@@ -312,7 +312,7 @@ export async function confirmPatchOrder(
     );
     assert(
       quantity >= campaign.minimum_quantity,
-      'La quantité minimum de patchs n’est pas atteinte.',
+      'La quantité minimale de patchs n’est pas atteinte.',
     );
     for (const reservation of reservations) {
       await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [reservation.user_id]);

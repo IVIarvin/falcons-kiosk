@@ -123,6 +123,16 @@ test('article libre : panier conservé et reprise après réponse perdue sans do
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
+    await ctx.db.query('UPDATE settings SET piller_enabled=true WHERE id=1');
+    await page.getByRole('button', { name: 'Ajouter à mon ardoise', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Achat enregistré', exact: true }),
+    ).toBeVisible();
+    await expect(page.locator('.piller-comment')).toBeVisible();
+    await capture(page, 'receipt-320');
+    await page.getByRole('link', { name: 'Voir mon ardoise', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Mon ardoise', exact: true })).toBeVisible();
+    expect((await getAccountLedger(ctx.db, ctx.member)).balanceCents).toBe(500);
   } finally {
     await ctx.db.close();
   }
@@ -140,10 +150,10 @@ test('patchs : réservation sans débit puis commande admin et ardoise confirmé
     const dialog = page.getByRole('dialog', { name: 'Nouvelle précommande', exact: true });
     await dialog.getByLabel('Nom du patch', { exact: true }).fill('Falcons reconnaissance');
     await dialog.getByLabel('Prix estimé par patch (CHF)', { exact: true }).fill('8');
-    await expect(dialog.getByLabel('Quantité minimum de patchs', { exact: true })).toHaveValue(
+    await expect(dialog.getByLabel('Quantité minimale de patchs', { exact: true })).toHaveValue(
       '100',
     );
-    await dialog.getByLabel('Quantité minimum de patchs', { exact: true }).fill('2');
+    await dialog.getByLabel('Quantité minimale de patchs', { exact: true }).fill('2');
     await dialog.getByLabel('Dernier jour de réservation', { exact: true }).fill('2099-12-31');
     for (const width of [320, 390, 1440]) {
       await page.setViewportSize({ width, height: 900 });

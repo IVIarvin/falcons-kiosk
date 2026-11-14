@@ -40,13 +40,19 @@ test('le catalogue combine recherche, catégorie et état avec une sortie des r�
     page.getByRole('button', { name: 'Modifier Eau minérale', exact: true }),
   ).toBeVisible();
   await search.fill('');
-  await page.getByRole('combobox', { name: 'Catégorie des produits', exact: true }).selectOption('Sodas');
+  await page
+    .getByRole('combobox', { name: 'Catégorie des produits', exact: true })
+    .selectOption('Sodas');
   await expect(page.locator('.products-table tbody tr')).toHaveCount(1);
-  await page.getByRole('combobox', { name: 'État des produits', exact: true }).selectOption('inactive');
+  await page
+    .getByRole('combobox', { name: 'État des produits', exact: true })
+    .selectOption('inactive');
   await expect(page.getByText('Aucun produit ne correspond.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Voir tous les produits', exact: true }).click();
   await expect(page.locator('.products-table tbody tr')).toHaveCount(3);
-  await page.getByRole('combobox', { name: 'État des produits', exact: true }).selectOption('inactive');
+  await page
+    .getByRole('combobox', { name: 'État des produits', exact: true })
+    .selectOption('inactive');
   await expect(page.locator('.products-table tbody tr')).toHaveCount(1);
   await expect(
     page.getByRole('button', { name: 'Modifier Chips paprika', exact: true }),
@@ -103,10 +109,10 @@ test('Falcons montre le membre avant la liste et les dialogues rendent le focus 
   await expect(personal).toContainText('Pas encore classé');
   await expect(personal.getByRole('link', { name: 'Voir ma ligne' })).toHaveCount(0);
   await page.goto('/profil');
-  const opener = page.getByRole('button', { name: 'Installer sur mon téléphone', exact: true });
+  const opener = page.getByRole('button', { name: 'Installer RAVIT', exact: true });
   await opener.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('dialog', { name: 'Installer le kiosque' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Installer RAVIT' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(opener).toBeFocused();
   await opener.click();

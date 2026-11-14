@@ -36,12 +36,8 @@ test('un inscrit sans achat apparaît immédiatement dans les comptes admin', as
   );
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.goto('/admin');
-  await page
-    .getByRole('checkbox', { name: 'Uniquement les comptes à régler', exact: true })
-    .check();
+  await page.getByRole('checkbox', { name: 'Masquer les comptes à zéro', exact: true }).check();
   await expect(page.getByRole('row').filter({ hasText: 'Inscrit sans achat' })).toHaveCount(0);
-  await page
-    .getByRole('checkbox', { name: 'Uniquement les comptes à régler', exact: true })
-    .uncheck();
+  await page.getByRole('checkbox', { name: 'Masquer les comptes à zéro', exact: true }).uncheck();
   await expect(page.getByRole('row').filter({ hasText: 'Inscrit sans achat' })).toBeVisible();
 });

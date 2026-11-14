@@ -49,9 +49,7 @@ test('le classement Buveurs exclut les boissons sans alcool et précise le péri
     await page.setViewportSize({ width: 390, height: 900 });
     await page.goto('/falcons');
     await page.getByRole('button', { name: 'Buveurs', exact: true }).click();
-    await expect(
-      page.getByText('Par nombre de boissons alcoolisées, cette semaine.', { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText('Nombre de boissons alcoolisées.', { exact: true })).toBeVisible();
     await expect(page.locator('.ranking-list')).toContainText('1 boisson');
     await expect(page.locator('.ranking-list')).not.toContainText('5 boissons');
     for (const width of [320, 390, 1440]) {

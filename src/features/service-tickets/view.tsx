@@ -45,7 +45,7 @@ export function ServiceRecovery({
   }
   return (
     <div className="notice-box">
-      <p>Un enregistrement de service attend confirmation. Retrouve-le avant de continuer.</p>
+      <p>Un ticket ou un visiteur attend confirmation. Retrouve-le avant de continuer.</p>
       {actions.map((a) => (
         <button
           key={a.action}
@@ -204,9 +204,7 @@ export function ServiceTicketDialog({
   }
   return (
     <Dialog title={`Servir · ${product.name}`} onClose={onClose}>
-      <p className={styles.intro}>
-        Un appui sur un nom note une unité servie. Ces tickets ne modifient pas les ardoises.
-      </p>
+      <p className={styles.intro}>Un appui = une unité servie. Aucun débit sur l’ardoise.</p>
       <div className={styles.feedback} role="status" aria-live="polite">
         {message && (
           <>
@@ -270,8 +268,8 @@ export function ServiceTicketDialog({
         <>
           <p className={styles.hint}>
             {search
-              ? `${visible.length} personne(s)`
-              : 'Personnes récentes en premier · une unité par appui'}
+              ? `${visible.length} personne${visible.length > 1 ? 's' : ''}`
+              : 'Personnes récentes en premier.'}
           </p>
           <div className={styles.people} aria-label="Personnes à servir">
             {visible.map((p) => (
@@ -299,7 +297,7 @@ export function ServiceTicketDialog({
             <summary>
               <UserPlus size={18} /> Créer un visiteur
             </summary>
-            <p>Seulement son nom. Tu pourras le rattacher à son compte après son inscription.</p>
+            <p>Un nom suffit. Tu pourras le relier à son compte après inscription.</p>
             <form onSubmit={(e) => void createVisitor(e)}>
               <Field label="Nom du visiteur">
                 <input

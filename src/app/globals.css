@@ -2163,6 +2163,10 @@ input[type='date'] {
   .finance-grid span {
     font-size: 13px;
   }
+  .export-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
   .export-actions .button {
     flex: 1;
   }

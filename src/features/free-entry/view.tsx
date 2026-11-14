@@ -93,7 +93,7 @@ export function FreeEntryButton() {
           ) : (
             <form onSubmit={submit}>
               <p className={styles.help}>
-                Un produit absent du catalogue ? Son montant sera ajouté à ton ardoise.
+                Saisis l’article et son prix. Le montant sera ajouté à ton ardoise.
               </p>
               <fieldset disabled={working || pending} className={styles.fields}>
                 <Field label="Nom de l’article">

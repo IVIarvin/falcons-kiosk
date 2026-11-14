@@ -128,7 +128,7 @@ export function KioskView() {
             type="search"
             inputMode="search"
             aria-label="Rechercher un produit"
-            placeholder="Coca, chips…"
+            placeholder="Chercher un produit…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -274,9 +274,14 @@ export function KioskView() {
               auto={!receipt.replay}
             />
           )}
-          <button className="button primary full" onClick={() => setReceipt(null)}>
-            Continuer <ArrowRight size={18} />
-          </button>
+          <div className={styles.receiptActions}>
+            <button className="button primary full" onClick={() => setReceipt(null)}>
+              Retour au kiosque <ArrowRight size={18} />
+            </button>
+            <Link className="button secondary full" href="/ardoise">
+              Voir mon ardoise
+            </Link>
+          </div>
         </section>
       ) : (
         count > 0 &&

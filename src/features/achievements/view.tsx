@@ -60,7 +60,7 @@ export function CrewView() {
       </div>
       <p className="muted small">
         {mode === 'drinks'
-          ? 'Par nombre de boissons alcoolisées, cette semaine.'
+          ? 'Nombre de boissons alcoolisées.'
           : 'Par montant acheté, pas par paiement.'}
       </p>
       <section className="crew-personal" aria-label="Ta place dans la section">
@@ -130,8 +130,16 @@ export function CrewView() {
         </details>
       </section>
       {!ranks.length ? (
-        <Empty title="La semaine commence.">
-          Les premières consommations lanceront le classement.
+        <Empty
+          title={
+            mode === 'allTime'
+              ? 'Aucun achat enregistré.'
+              : mode === 'drinks'
+                ? 'Aucune boisson alcoolisée cette semaine.'
+                : 'Aucun achat cette semaine.'
+          }
+        >
+          Le classement se met à jour avec les achats.
         </Empty>
       ) : (
         <ol className={`ranking-list ${styles.ranking}`}>

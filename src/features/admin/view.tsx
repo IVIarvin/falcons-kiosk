@@ -173,7 +173,7 @@ function Settlements() {
           </div>
           <label className="check-line">
             <input type="checkbox" checked={!all} onChange={(e) => setAll(!e.target.checked)} />{' '}
-            Uniquement les comptes à régler
+            Masquer les comptes à zéro
           </label>
           {!accounts.length ? (
             <Empty
@@ -869,7 +869,7 @@ function Documents() {
           <QrCode size={28} />
           <div>
             <h2>Affiche d’accès</h2>
-            <p>QR code et adresse du kiosque.</p>
+            <p>QR code pour accéder au kiosque.</p>
           </div>
           {state.admin!.canonicalUrl ? (
             <DownloadLink href={doc('qr')}>Télécharger l’affiche</DownloadLink>
@@ -899,17 +899,14 @@ function Documents() {
         <div>
           <h2>Sauvegarde des données</h2>
           <p>
-            Export complet pour la procédure de restauration. Il contient les coordonnées et les
-            empreintes de mots de passe : conserve-le dans un emplacement privé.
+            Pour restaurer le kiosque : coordonnées, historique et données d’accès. Garde ce fichier
+            privé.
           </p>
         </div>
         <DownloadLink href={doc('sauvegarde')}>Exporter la sauvegarde</DownloadLink>
       </div>
       {!state.admin!.canonicalUrl && (
-        <p className="muted small">
-          Le catalogue est disponible dès maintenant. L’affiche QR sera générable après
-          configuration de l’adresse publique du kiosque.
-        </p>
+        <p className="muted small">L’affiche QR nécessite l’adresse publique du kiosque.</p>
       )}
     </>
   );
@@ -937,7 +934,7 @@ function Members() {
   }
   return (
     <>
-      <PageTitle title="Membres et admins" subtitle="Comptes et accès administrateur." />
+      <PageTitle title="Membres et admins" subtitle="Coordonnées et accès des membres." />
       <div className="search-field">
         <Search size={18} />
         <input

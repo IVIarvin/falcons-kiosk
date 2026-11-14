@@ -64,3 +64,10 @@
     padding-inline: 11px;
   }
 }
+.receiptActions {
+  display: grid;
+  gap: 10px;
+}
+:global(.piller-comment) + .receiptActions {
+  margin-top: 18px;
+}

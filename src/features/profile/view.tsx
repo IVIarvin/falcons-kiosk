@@ -9,6 +9,7 @@ import { ScoutAvatar } from '@/components/scout-avatar';
 import { profileMilestones } from './milestones';
 import styles from './milestones.module.css';
 import { AvatarPicker } from './avatar-picker';
+import { appName } from '@/lib/brand';
 export function ProfileView() {
   const { state, run, busy, notice } = useApp();
   const router = useRouter();
@@ -37,7 +38,7 @@ export function ProfileView() {
       <section className={styles.identity} aria-label="Ton avatar enregistré">
         <ScoutAvatar seed={savedAvatar} size={88} />
         <div>
-          <p>Ton avatar de section</p>
+          <p>Mon avatar</p>
           <div className={styles.avatarActions}>
             <button
               className="button secondary"
@@ -134,7 +135,7 @@ export function ProfileView() {
       </div>
       <div className="profile-actions">
         <button className="button secondary" onClick={() => setInstall(true)}>
-          <Download size={18} /> Installer sur mon téléphone
+          <Download size={18} /> Installer {appName}
         </button>
         <button
           className="button secondary"
@@ -152,7 +153,7 @@ export function ProfileView() {
         </button>
       </div>
       {install && (
-        <Dialog title="Installer le kiosque" onClose={() => setInstall(false)}>
+        <Dialog title={`Installer ${appName}`} onClose={() => setInstall(false)}>
           <div className="install-instructions">
             <Smartphone size={34} />
             <h3>Sur iPhone</h3>
